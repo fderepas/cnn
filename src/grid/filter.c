@@ -15,6 +15,7 @@ Filter * newFilter(Img* img,int percent) {
     answer->percent=percent;
     answer->weight=0;
     answer->maxVal=0;
+    answer->data=NULL;
     if (img==NULL) return answer;
     filterUpdateValues(answer);
     return answer;
@@ -32,7 +33,19 @@ void deleteFilter(Filter*f) {
     f->weight=0;
     f->threshold=0;
     f->maxVal=0;
+    if (f->data!=NULL)
+        free(f->data);
+    memset(f,0,sizeof(Filter));
     free(f);
+}
+
+/**
+ * @brief Copies a string in the data field of a filter.
+ * @param f a filter
+ * @param s a string to be copied in f->data
+ */
+void filterSetData(Filter * f , char *s) {
+    f->data=stringCopy(s);
 }
 
 /**
@@ -90,6 +103,7 @@ void filterWrite(Filter*f,char*basename) {
     if (fi==NULL)
         ERROR("Could not open file ",s);
     fprintf(fi,"%d\n",f->percent);
+    fprintf(fi,"%s\n",f->data);
     fclose(fi);
 }
 
@@ -113,6 +127,15 @@ Filter * newFilterRead(char *basename) {
     if (fi==NULL)
         ERROR("Could not open file ",s);
     fscanf(fi,"%d",&(answer->percent));
+    
+    char * line = NULL;
+    size_t len = 0;
+    if (getline(&line, &len, fi)==-1) {
+        WARNING("Error while reading ",s);
+    } else {
+        answer->data=stringCopy(line);
+    }
+    if (line) free(line);
     fclose(fi);
     filterUpdateValues(answer);
     return answer;

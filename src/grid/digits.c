@@ -1,18 +1,78 @@
+#include <libgen.h>
+#include <unistd.h>
 #include "imgfam.h"
 #include "img.h"
 #include "filterfam.h"
-#include <libgen.h>
+#include "digits.h"
+#include "layer.h"
+
+/**
+ * @brief allocates a memory for a new set of filters to detect 
+ *        digits
+ * @return a newly allocated Digit structure.
+ */
+Digits * newDigits(char * layerPrefix) {
+    Digits * answer = (Digits*)malloc(sizeof(Digits));
+    char layer1location[strlen(layerPrefix)+10];
+    sprintf(layer1location,"%s_1",layerPrefix);
+    if (layerCount(layer1location)>0) {
+        answer->layer1 = newLayer("layer1",layer1location,2,2);
+    } else {
+        answer->layer1=NULL;
+    }
+    char layer2location[strlen(layerPrefix)+10];
+    sprintf(layer2location,"%s_2",layerPrefix);
+    if (layerCount(layer1location)>0) {
+        answer->layer2 = newLayer("layer2",layer2location,2,2);
+    } else {
+        answer->layer2 = NULL;
+    }
+    return answer;
+}
+
+/**
+ * Deletes an allocated Digit structure.
+ */
+void deleteDigits(Digits*d) {
+    free(d->layer1Prefix);
+    free(d->layer2Prefix);
+    if (d->layer1)
+        deleteLayer(d->layer1);
+    if (d->layer2)
+        deleteLayer(d->layer2);
+    memset(d,0,sizeof(Digits));
+    free(d);
+}
+
+
+/**
+ * @brief Size of the buffer to allocate the path to store
+ *        layer location to parse digits.
+ * @return size of the buffer to allocate.
+ * @see digitsGetDefaultLayerPrefix
+ */
+int digitsGetDefaultLayerPrefixSize() {
+    return strlen("/digits/layer") + strlen(CFG_DATAROOTDIR)+1;
+}
+
+/**
+ * @brief Writes the directory to store layers to parse digits.
+ * @param layerPrefix is a buffer of at least digitsGetDefaultLayerPrefixSize
+ *        size to store the path where layers are stored.
+ * @see digitsGetDefaultLayerPrefixSize
+ */
+void digitsGetDefaultLayerPrefix(char* layerPrefix) {
+    sprintf(layerPrefix,"%s/digits/layer",CFG_DATAROOTDIR);
+}
 
 /**
  * @brief Layer 1 is made of 5x5 filters with a rotating white bar
- * on a back backound.
+ * on a black backound.
  * 
- * Data is stored in CFG_DATAROOTDIR/digits/layer_1
- * Where CFG_DATAROOTDIR is $prefix/share where $prefix
- * is the value of the --prefix argument supplied to the
- * configure script.
+ * @param layerPrefix where data should be written, generally
+ *    the value returned by digitsGetDefaultLayerPrefix
  */
-void generateDigitsLayer1 () {
+void digitsGenerateLayer1 (char * layerPrefix) {
     // create 6 images 15x15 images with a rotating bar
     Img * allBars[6];
     allBars[0]=newImgVerticalBar(15,3);
@@ -37,12 +97,12 @@ void generateDigitsLayer1 () {
         deleteImg(allBars[i]);
     }
     // save the familly on the disk
-    char s[99];
-    sprintf(s,"%s/digits/layer_1",CFG_DATAROOTDIR);
+    char * s = stringAdd(layerPrefix,"_1");
     filterFamWrite(filterFamilly,s);
+    free(s);
 }
 
-void testDigitsLevel1() {
+void digitsTestLayer1(char * layerPrefix) {
     // create 6 images 30x30 images with a rotating bar
     Img * testImg[6];
     Img * base = newImgVerticalBar(30,2);
@@ -57,15 +117,14 @@ void testDigitsLevel1() {
     deleteImg(base);
 
     // read existing filters
-    char s[99];
-    sprintf(s,"%s/digits/layer_1",CFG_DATAROOTDIR);
-    FilterFam * firstLevelFilters=filterFamRead(s);
-
+    Digits * d = newDigits(layerPrefix);
+    if (d->layer1==NULL) {
+        ERROR("Layer 1 filters not found, did you generate them?","");
+    }
     
     for (int i=0;i<6;++i) {
         // creates a familly of 6 26x26 images
-        ImgFam * firstLayerOutput =
-            filterFamApplyConvolution(firstLevelFilters,testImg[i]);
+        ImgFam * firstLayerOutput = layerPassImg(d->layer1,testImg[i]);
         // verify that the maximum output for a bar with
         // and angle i*30 is of the i-th image.
         int maxIndex=-1;
@@ -99,14 +158,24 @@ void testDigitsLevel1() {
         imgWrite(testImgPlus15[i],s);
     }
     deleteImg(base);
-    
+
+    // pass the 30x30 images in the convolution filter
     for (int i=0;i<6;++i) {
         // creates a familly of 6 26x26 images
         ImgFam * firstLayerOutput =
-            filterFamApplyConvolution(firstLevelFilters,testImgPlus15[i]);
+            layerPassImg(d->layer1,testImgPlus15[i]);
         char s[99];
         sprintf(s,"test_digits_l1out_15_%d",i);
         imgFamWrite(firstLayerOutput,s);
+
+        
+        printf("%d degrees\n",30*i+15);
+        int v[6];
+        for (int j=0;j<6;++j) {
+            v[j]=imgGetWeight(firstLayerOutput->imgs[j]);
+            printf("%4d ",v[j]);
+        }
+        printf("\n");
     }
 }
 
@@ -114,51 +183,50 @@ void testDigitsLevel1() {
  * @brief Generate layer 2 to recognized digit n
  * @param n digit to recognize
  */
-void generateLayer2 (int n) {
-    char s[99];
-    sprintf(s,"%s/digits/layer_1",CFG_DATAROOTDIR);
-    FilterFam * firstLevelFilters=filterFamRead(s);
-    sprintf(s,"%s/digits/reference_%d.png",CFG_DATAROOTDIR,n);
-    //sprintf(s,"%s/digits/reference_O.png",CFG_DATAROOTDIR,n);
-    Img * tmpimg = newImgRead(s);
-    Img * img = imgInvert(tmpimg);
-    deleteImg(tmpimg);
-    ImgFam * firstLayerOutput =
-        filterFamApplyConvolution(firstLevelFilters,img);
-    imgFamWrite(firstLayerOutput,"firstLayerOutput_O");
-    ImgFam * firstLayerMaxPoolOutput=imgFamDownSampleMax(firstLayerOutput,2,2);
-    //ImgFam * avgPool=imgFamDownSampleMax(firstLayerMaxPoolOutput,2,2);
-    
-    ImgFam * avgPool = firstLayerMaxPoolOutput;
-    char exportBaseName[99];
-    sprintf(exportBaseName,"%s/digits/layer_2_Digit%d",CFG_DATAROOTDIR,n);
-    //sprintf(exportBaseName,"%s/digits/layer_2_O",CFG_DATAROOTDIR);
-    imgFamWrite(avgPool,exportBaseName);
-    // free allocated memory
-    deleteImg(img);
-    deleteFilterFam(firstLevelFilters);
-    deleteImgFam(firstLayerOutput);
-    deleteImgFam(firstLayerMaxPoolOutput);
-    //deleteImgFam(avgPool);
+void digitsGenerateLayer2 (char * layerPrefix) {
+    Digits * d = newDigits(layerPrefix);
+    if (d->layer1==NULL) {
+        ERROR("Generate layer 1 before generating layer 2.","");
+    }
+    for (int n=1;n<=9;++n) {
+        char s[99];
+        sprintf(s,"%s/digits/reference_%d.png",CFG_DATAROOTDIR,n);
+        if (access(s, F_OK) != 0) {
+            ERROR("File not found: ",s);
+        }
+        Img * tmpimg = newImgRead(s);
+        Img * img = imgInvert(tmpimg);
+        deleteImg(tmpimg);
+        ImgFam * firstLayerOutput =
+            layerPassImg(d->layer1,img);
+        sprintf(s,"_layer_%d",n);
+        imgFamWrite(firstLayerOutput,s);
+        
+        // free allocated memory
+        deleteImg(img);
+        deleteImgFam(firstLayerOutput);
+    }
+    deleteDigits(d);
 }
 
 /**
  * @brief Creates images of characters 1 to 9.
  *
- * This function creates a bash script which callx the 
+ * This function creates a bash script which calls the 
  * 'convert' program to: list all fonts on the system and 
- * generate 28x28 pictures of each digits 1 to 9 for the firt
+ * generate 28x28 pictures of each digits 1 to 9 for the first
  * numFonts fonts found.
  * @param directory where to create the images
  * @param numFonts number of fonts to create.
  */
-void generateImageOfFont(char*directory,int numFonts) {
+void digitsGenerateImageOfFont(char*directory,int numFonts) {
     char * tmpFile = (char*)malloc(strlen(directory)+40);
     sprintf(tmpFile,"%s/generate_png_from_font.sh",directory);
     FILE * f = fopen(tmpFile,"w");
     HERE(tmpFile);
     fprintf(f,"#/bin/sh\n");
     fprintf(f,"# this file has been automatically generated\n");
+    fprintf(f,"# from c code %s:%d.\n",__FILE__,__LINE__);
     fprintf(f,"set -e\n");
     fprintf(f,"cd `dirname $0`\n");
     fprintf(f,"fonts=(`convert -list font  | grep Font: | grep -vi emoji| sed -e s/Font:// | tr -d ' '`)\n");
@@ -186,7 +254,7 @@ void generateLayer3() {
     //memset(tmpDirName,0,60);
     createTmpDir(tmpDirName,15);
     int numFonts=30;
-    generateImageOfFont(tmpDirName,numFonts);
+    digitsGenerateImageOfFont(tmpDirName,numFonts);
     FILE * layer3File = fopen("l3.c","w");
     for (int f=1;f<=numFonts;++f) {
         char font[80];
@@ -342,7 +410,7 @@ void generateTestData() {
     //memset(tmpDirName,0,60);
     createTmpDir(tmpDirName,15);
     int numFonts=30;
-    generateImageOfFont(tmpDirName,numFonts);
+    digitsGenerateImageOfFont(tmpDirName,numFonts);
     for (int i=1;i<=numFonts;++i) {
         char fontpath[99];
         sprintf(fontpath,"%s/%d",tmpDirName,i);
@@ -383,7 +451,8 @@ void digitsUsage(FILE*f,char*name) {
  */
 int digitsMain(int argc,char**argv) {
     int i=1;
-    
+    char layerPrefix [digitsGetDefaultLayerPrefixSize()];
+    digitsGetDefaultLayerPrefix(layerPrefix);
     while (i<argc) {
         if (strcmp(argv[i],"--create")==0 ||
             strcmp(argv[i],"-c")==0 ) {
@@ -395,14 +464,12 @@ int digitsMain(int argc,char**argv) {
             int l = atoi(argv[i]);
             if (l<1 || l>3) {
                 digitsUsage(stderr,argv[0]);
-                ERROR("-c|--create 2 or 3 as argument","");
+                ERROR("-c|--create 1, 2 or 3 as argument","");
             }
             if (l==1) {
-                generateDigitsLayer1();
+                digitsGenerateLayer1(layerPrefix);
             } else if (l==2) {
-                for (int i=1;i<10;++i)
-                    // generate layer 2 for digit i
-                    generateLayer2(i);
+                digitsGenerateLayer2(layerPrefix);
             } else {
                 generateLayer3();
             }
@@ -414,8 +481,12 @@ int digitsMain(int argc,char**argv) {
                 ERROR("-c|--create expects the number of layer to generate","");
             }
             int t=atoi(argv[i]);
+            if (t<1 || t>3) {
+                digitsUsage(stderr,argv[0]);
+                ERROR("-t|--test 1, 2 or 3 as argument","");
+            }
             if (t==1) {
-                testDigitsLevel1();
+                digitsTestLayer1(layerPrefix);
             } else if (t==2) {
 
             } else if (t==3) {

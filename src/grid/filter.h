@@ -17,6 +17,8 @@ struct filter {
     long int maxVal;
     /** percentage used to compute threshold from maxVal */
     int percent;
+    /** data associated with this filter if any. */
+    char * data;
 };
 
 

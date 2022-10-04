@@ -7,12 +7,20 @@
 #include "img.h"
 #include "filter.h"
 
-struct my_error_mgr {
-  struct jpeg_error_mgr pub;	/* "public" fields */
-  jmp_buf setjmp_buffer;	/* for return to caller */
+/**
+ * Data structure errors when manipulating jpeg.
+ */
+struct jpegerrmgr {
+    /** "public" fields */
+    struct jpeg_error_mgr pub;
+    /** for return to caller */
+    jmp_buf setjmp_buffer;
 };
 
-typedef struct my_error_mgr * my_error_ptr;
+/**
+ * @brief Pointer to struct jpegerrmgr.
+ */
+typedef struct jpegerrmgr * MyErrorPtr;
 
 /**
  * @brief Creates an image from an array of unsigned char.
@@ -157,8 +165,8 @@ Img * newImgSudoku(int sz) {
  * @brief used to manage jpeg errors.
  */
 void my_error_exit (j_common_ptr cinfo) {
-    /* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
-    my_error_ptr myerr = (my_error_ptr) cinfo->err;
+    /* cinfo->err really points to a jpegerrmgr struct, so coerce pointer */
+    MyErrorPtr myerr = (MyErrorPtr) cinfo->err;
     
     /* Always display the message. */
     /* We could postpone this until after returning, if we chose. */
@@ -176,7 +184,7 @@ void my_error_exit (j_common_ptr cinfo) {
  */
 static Img * newImgReadJpeg(char *filename) {
     struct jpeg_decompress_struct cinfo;
-    struct my_error_mgr jerr;
+    struct jpegerrmgr jerr;
     FILE * infile;		/* source file */
     JSAMPARRAY buffer;		/* Output row buffer */
     int row_stride;		/* physical row width in output buffer */
@@ -644,9 +652,9 @@ Img* imgConvolution(Img*in,Filter*filter) {
  */
 Img* imgDownSampleMax(Img* img,int poolsize,int stride) {
     if (img->width < poolsize)
-        ERROR("Wrong size.","");
+        ERROR("Wrong size, poolsize too large.","");
     if (img->height < poolsize)
-        ERROR("Wrong size.","");
+        ERROR("Wrong size, poolsize too large.","");
     int w =(img->width - poolsize)/stride+1;
     int h =(img->height - poolsize)/stride+1;
     Img* answer = newImgColor(w,h,0);

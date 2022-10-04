@@ -324,7 +324,7 @@ int gridMain(int argc,char**argv) {
     
     HERE(":::::::::");
     HERED(secondLayerOutput->imgs[0]->width);
-    ImgFam * secondLayerMaxPoolOutput=imgFamDownSampleMax(secondLayerOutput,3,3);
+    ImgFam * secondLayerMaxPoolOutput=imgFamDownSampleMax(secondLayerOutput,2,2);
     
     imgFamWrite(secondLayerMaxPoolOutput,"gridLayer2Output");
     HERE(":::::::::");

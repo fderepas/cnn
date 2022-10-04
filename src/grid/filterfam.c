@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "filterfam.h"
 #include "imgfam.h"
 
@@ -14,7 +15,7 @@ FilterFam * newFilterFam(int c) {
 }
 
 /** 
- * @brief Deletes a famelly of filters.
+ * @brief Deletes a familly of filters.
  * @param ff the familly to delete.
  */
 void deleteFilterFam(FilterFam * ff) {
@@ -29,8 +30,26 @@ void deleteFilterFam(FilterFam * ff) {
 }
 
 /**
+ * @brief counts the number of filters present in familly with prefix
+ *        convFilterLoc
+ * @param convFilterLoc a string to be used as a base for the name of
+ *        the picture : convFilterLoc_<num>.png
+ * @return number of elements in this filter
+ */
+int filterFamCount(char * convFilterLoc) {
+    int answer =-1;
+    char fname[strlen(convFilterLoc)+10];
+    do {
+        answer ++;
+        sprintf(fname,"%s_%d.png",convFilterLoc,answer);
+    } while (access(fname, F_OK) == 0);
+    return answer;
+}
+
+/**
  * @brief set the i-th image of a familly of images.
- * @param filterFam the familly of images in which we are going to set the image.
+ * @param filterFam the familly of images in which we are going 
+ *        to set the image.
  * @param i index of the image to be in the collection.
  * @param filter the image that will be at i-th location in filterFam.
  */

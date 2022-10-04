@@ -1,6 +1,6 @@
 AM_LDFLAGS = -ljpeg -lm -lpng
 bin_PROGRAMS=grid
-grid_SOURCES=img.c imgfam.c digits.c grid.c util.c fontname.c main.c filter.c filterfam.c
+grid_SOURCES=img.c imgfam.c digits.c grid.c util.c fontname.c main.c filter.c filterfam.c layer.c
 #layer3_SOURCES=layer3.c fontname.c
 
 fontname.c : gen_fontlist.sh

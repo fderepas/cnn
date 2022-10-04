@@ -30,5 +30,6 @@ void filterFamSetFilter(FilterFam*filterFam,int i,Filter*filter);
 void deleteFilterFam(FilterFam *);
 FilterFam * filterFamRead(char*basename);
 void filterFamWrite(FilterFam*filterFam,char*basename);
+int filterFamCount(char * convFilterLoc);
 
 #endif

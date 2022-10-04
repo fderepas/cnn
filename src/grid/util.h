@@ -13,6 +13,10 @@
                             __FILE__,                                   \
                             __LINE__,                                   \
                             x,y); exit(1);}
+#define WARNING(x,y) {fprintf(stderr,"\033[31m%s:%d: %s%s\033[m\n",     \
+                            __FILE__,                                   \
+                            __LINE__,                                   \
+                            x,y);}
 #define HERE(x) {printf("%s:%d: %s\n",                          \
                         __FILE__,                               \
                         __LINE__,                               \
@@ -23,4 +27,6 @@
                          x);}
 void writeRandomName(char*,int);
 void createTmpDir(char*name,int n);
+char * stringCopy(char *);
+char * stringAdd(char *,char *);
 #endif

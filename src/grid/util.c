@@ -59,3 +59,28 @@ void createTmpDir(char*name,int n) {
         ERROR("Unlucky name already exists: ",name);
     }
 }
+
+/**
+ * @brief allocates a new string.
+ * @param s string to copy.
+ */
+char * stringCopy(char * s) {
+    int l = strlen(s)+1;
+    char * answer = (char*)malloc(l);
+    memcpy(answer,s,l);
+    return answer;
+}
+/**
+ * @brief allocates a new string which is a
+ *        concatenated with b.
+ * @param a a string 
+ * @param b a string
+ * @return concatenation of a and b
+ */
+char * stringAdd(char * a,char *b) {
+    int l = strlen(a)+strlen(b)+1;
+    char * answer = (char*)malloc(l);
+    sprintf(answer,"%s%s",a,b);
+    return answer;
+}
+
