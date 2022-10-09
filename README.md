@@ -1,4 +1,4 @@
-
+Reference manual [here](./doc/refman.pdf)
 Here how to compile the code
 
 ## gcc on ubuntu
