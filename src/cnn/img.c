@@ -538,7 +538,35 @@ void imgDrawRect(Img*myImg,int xmin,int ymin,int xmax,int ymax) {
         myImg->data[xmin+myImg->width*y]=(y>>2)%2?255:0;
         myImg->data[xmax+myImg->width*y]=(y>>2)%2?255:0;
     }
-    
+}
+
+/**
+ * @brief Extract an image from and image
+ * @param myImg image from which we extract the image.
+ * @param xmin horizontal position of lower left corner 
+ * @param ymin vertical position of lower left corner 
+ * @param xmax horizontal position of upper right corner 
+ * @param ymax vertical position of upper right corner 
+ * @return the newly allocated image.
+ */
+Img * imgExtract(Img*myImg,int xmin,int ymin,int xmax,int ymax) {
+    if (xmin<0 || ymin<0 || xmax >myImg->width || myImg->height<ymax ||
+        xmin>=xmax || ymin>=ymax ) {
+        fprintf(stderr,"rectangle : %d %d %d %d\n",xmin,ymin,xmax,ymax);
+        fprintf(stderr,"image size is %d %d\n",myImg->width,myImg->height);
+        ERROR("Wrong size.","");
+    }
+    int w=xmax-xmin;
+    int h=ymax-ymin;
+    Img * answer = newImgColor(w,h,255);
+    for(int y = 0; y<h; y++) {
+        // use memcopy to be faster since horizontal pixels
+        // are stored one next to the other.
+        memcpy(&answer->data[0+y*w],
+               &myImg->data[xmin+myImg->width*(ymin+y)],
+               w);
+    }
+    return answer;
 }
 
 /**

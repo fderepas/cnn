@@ -8,6 +8,7 @@ Here how to compile the code
 cd src/cnn
 make
 make install
+./cnn ../../dataset/sudoku_photo/hard3.png 
 ```
 
 
@@ -29,6 +30,13 @@ Where option is one of:
         Blurs the image with a radius of r.
     [-c|--contrast] :
         Raises contrast level.
+    --conv <filename> <percent>:
+        load image in <filename> and use it as a convolution
+        filter with a threshold set at <percent>.
+    --cross <n> <w> <t>:
+        Generates a black cross on a white background. 
+        The cross size is n by n pixels in a w by w
+        picture. The cross line is <t> pixels thick.
     [-f|--flatten] :
         Flattens the contrast.
     [-h|--help] :
@@ -42,9 +50,10 @@ Where option is one of:
         Prints on stdout numerical value of current image.
     [-s|--scale] <n>:
         Scales image by a factor n.
-    --square <n>:
+    --square <n> <w> <t>:
         Generates a black square on a white background. 
-        The square size is n by n pixels in a 21x21 picture.
+        The square size is n by n pixels in a w by w
+        picture. The square line is <t> pixels thick.
     --sudoku <n>:
         Generates a black empty sudoku grid of n pixels large in a 
         224 by 224 picture with white background.
@@ -55,6 +64,13 @@ Where option is one of:
         in a white square of size <s>.
     --version :
         Displays the current version of img.
+    --1d-dots <n> <w>:
+        Generates <n> black dots on a white background, 
+        in one dimension: the generated image size is <w> 
+        by 1 pixels.
+    --3x3-edge :
+        Generates a 3x3 image to perform edge detection if 
+        used as convolution filter.
     [-3d|--3d] :
         Draws an isometric-like view.
         in a 224x224 image.
@@ -66,6 +82,17 @@ Examples:
         Generates an empty sudoku grid, then rotate it by 5
         degrees, then blurs the image with a radius of 2, then
         save the result in file out.png.
+    
+    img --3x3-edge edgefilter.png
+        Creates a 3x3 filter to be used for edge detection.
+        Save it under edgefilter.png.
+    
+    img mypic.png --conv edgefilter.png -10 out.png
+        Apply the convolution filter edgefilter.png to
+        mypic.png and save the result under out.png.
+        -10% of threshold is applied. Put a lower percentage
+        for brighter images, a higher one for a darker.
+    
     img my_photo.jpg --lum my_new_photo.png
         Reads file my_photo.jpg increase luminosity to stretch from
         dark to very clear and save the result in my_new_photo.png.

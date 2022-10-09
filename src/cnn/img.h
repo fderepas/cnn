@@ -58,6 +58,7 @@ unsigned char imgScalar(Img*,Img*,int,int);
 Img * imgRotate(Img* img,int deg);
 Img * imgRotate90(Img* img);
 Img * imgScale(Img*in,int s);
+Img * imgExtract(Img*myImg,int xmin,int ymin,int xmax,int ymax);
 int imgGetWeight(Img*in);
 int imgMain(int,char**);
     

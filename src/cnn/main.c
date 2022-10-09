@@ -3,6 +3,33 @@
 #include "grid.h"
 
 
+/**
+ * @brief Extract digits from a sudoku grid.
+ * @param myImg image from which we extract the digits.
+ * @param xmin horizontal position of lower left corner of the sudoku grid.
+ * @param ymin vertical position of lower left corner of the sudoku grid.
+ * @param xmax horizontal position of upper right corner of the sudoku grid.
+ * @param ymax vertical position of upper right corner of the sudoku grid.
+ */
+void cnnExtractDigits(Img*myImg,int xmin,int ymin,int xmax,int ymax) {
+    int xstep=(xmax-xmin)/9;
+    int ystep=(ymax-ymin)/9;
+    int tenPercent=xstep/10;
+    for (int i=0;i<9;++i) {
+        for (int j=0;j<9;++j) {
+            Img * aDigit = imgExtract(myImg,
+                                      xmin+i*xstep+tenPercent,
+                                      ymin+j*ystep+tenPercent,
+                                      xmin+(i+1)*xstep-tenPercent,
+                                      ymin+(j+1)*ystep-tenPercent);
+            char s [99];
+            snprintf(s,99,"extracted_digit_%d_%d.png",i,j);
+            imgWrite(aDigit,s);
+            deleteImg(aDigit);
+        }
+    }
+}
+
 /** 
  * @brief Tells how to use this program.
  * @param f where to write the info.
@@ -72,6 +99,9 @@ int main (int argc,char**argv) {
     int xmin,ymin,xmax,ymax;
     // locate the grid
     gridLocate(inverseImage,&xmin,&ymin,&xmax,&ymax);
+    HERE("Found sudoku grid :");
+    printf("%d %d %d %d\n",xmin,ymin,xmax,ymax);
+
     imgDrawRect(inverseImage,xmin,ymin,xmax,ymax);
     imgWrite(inverseImage,"afterstd.png");
     // draw a square around the grid found in the
@@ -83,6 +113,12 @@ int main (int argc,char**argv) {
                 ymax<<scaleFactor);
     // write the image
     imgWrite(rawInputImage,"out.png");
+    HERE("grid detection in out.png");
+    cnnExtractDigits(rawInputImage,
+                     xmin<<scaleFactor,
+                     ymin<<scaleFactor,
+                     xmax<<scaleFactor,
+                     ymax<<scaleFactor);
     // free allocated memory
     deleteImg(inverseImage);
     deleteImg(rawInputImage);
