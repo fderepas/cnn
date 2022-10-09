@@ -1,6 +1,7 @@
 AM_LDFLAGS = -ljpeg -lm -lpng
-# the -fsanitize=address  -fsanitize=undefined flags are for lldb
-CFLAGS+=-g -fsanitize=address  -fsanitize=undefined
+# use asan options :
+# -fsanitize=address  -fsanitize=undefined 
+AM_CFLAGS=-g -fsanitize=address  -fsanitize=undefined
 bin_PROGRAMS=cnn
 cnn_SOURCES=img.c imgfam.c digits.c grid.c util.c fontname.c main.c filter.c filterfam.c layer.c
 #layer3_SOURCES=layer3.c fontname.c

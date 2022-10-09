@@ -5,6 +5,8 @@
 Even though the program is written in C we follow a object oriented style to
 have a modular and more maintenable code.
 
+## writint conventions
+
 We use the convention that C struct are named in lower case. For instance:
 ```
 struct img { /* ... */ };      // an image
@@ -37,6 +39,8 @@ In file ```foobar.h``` we find the prototype of the function:
 int fooBarMyFunction(FooBar* fooBar);
 ```
 
+## Documentation
+
 We use doxygen to comment the code so that reports can be automatically generated. Here is an example:
 ```
 /**
@@ -54,9 +58,21 @@ struct img {
 };
 ```
 
-We use the gnu autotools to generate makefiles, so that the code can be easily compiled with clang or gcc on different platforms.
+## Verication tools
 
-Valgrind in conjuction with gcc and llvm sanitizers in conjunction with clang have been used. x86 and arm architectures have been used to compile and test the code.
+We use the gnu autotools to generate makefiles, so that the code can be easily compiled with clang or gcc on different platforms. This enlarges the test coverage.
+
+Compilers used are gcc and llvm.
+
+Platforms to perform tests are intel and arm microprocessors.
+
+To check memory usage we use Valgrind and Asan. Valgrind run tests directly on the binary. Asan requires the flags
+```
+-fsanitize=address  -fsanitize=undefined
+```
+at the compilation phase.
+
+
 
 # Looking at the grid
 

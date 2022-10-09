@@ -9,12 +9,16 @@
 /**
  * @brief allocates a memory for a new set of filters to detect 
  *        digits
+ *
+ * Data structure should be freed using deleteDigits.
  * @return a newly allocated Digit structure.
+ * @see deleteDigits
  */
 Digits * newDigits(char * layerPrefix) {
     Digits * answer = (Digits*)malloc(sizeof(Digits));
     char layer1location[strlen(layerPrefix)+10];
     snprintf(layer1location,strlen(layerPrefix)+10,"%s_1",layerPrefix);
+    answer->layer1Prefix=stringCopy(layer1location);
     if (layerCount(layer1location)>0) {
         answer->layer1 = newLayer("layer1",layer1location,2,2);
     } else {
@@ -22,7 +26,8 @@ Digits * newDigits(char * layerPrefix) {
     }
     char layer2location[strlen(layerPrefix)+10];
     snprintf(layer2location,strlen(layerPrefix)+10,"%s_2",layerPrefix);
-    if (layerCount(layer1location)>0) {
+    answer->layer2Prefix=stringCopy(layer2location);
+    if (layerCount(layer2location)>0) {
         answer->layer2 = newLayer("layer2",layer2location,2,2);
     } else {
         answer->layer2 = NULL;
@@ -31,7 +36,9 @@ Digits * newDigits(char * layerPrefix) {
 }
 
 /**
- * Deletes an allocated Digit structure.
+ * Deletes an allocated Digit structure previously allocated with newDigits..
+ * @param d the data structure to free.
+ * @see newDigits
  */
 void deleteDigits(Digits*d) {
     free(d->layer1Prefix);
@@ -100,7 +107,9 @@ void digitsGenerateLayer1 (char * layerPrefix) {
     // save the familly on the disk
     char * s = stringAdd(layerPrefix,"_1");
     filterFamWrite(filterFamilly,s);
+    // release memory
     free(s);
+    deleteFilterFam(filterFamilly);
 }
 
 void digitsTestLayer1(char * layerPrefix) {

@@ -56,6 +56,7 @@ ImgFam * layerPassImg(Layer*l,Img*i) {
     ImgFam * maxPoolOutput=imgFamDownSampleMax(intermediateOutput,
                                                l->downSamplePoolSize,
                                                l->downSampleStride);
+    deleteImgFam(intermediateOutput);
     return maxPoolOutput;
 }
 

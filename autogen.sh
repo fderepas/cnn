@@ -4,12 +4,18 @@ if [ $# -eq 0 ]
 then
     # No arguments supplied
     touch NEWS
+    rm -rf README
+    ln -s README.md README
     which autoreconf
     if [ $? -ne "0" ]; then
         echo "autoreconf not found try:"
         echo "   sudo apt-get install autoconf"
         exit 1
     fi
+    aclocal
+    autoconf
+    autoheader
+    automake --add-missing
     autoreconf --install --force --verbose
     if [ `uname` == "Linux" ]; then echo 1 > uname_is_linux; else echo 0 > uname_is_linux; fi
 else
@@ -26,7 +32,7 @@ else
         find . -name Makefile -exec rm -f {} \;
         find . -name Makefile.in -exec rm -f {} \;
         find . -name .DS_Store -exec rm -rf {} \;
-	rm -f uname_is_linux
+	rm -f uname_is_linux README
     else
         echo "unknown command $1"
     fi

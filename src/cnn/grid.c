@@ -79,15 +79,23 @@ void gridVertHoriConvo(Img ** outputH,
         filterFamApplyConvolutionSameSizeDiff(filtersVert,inputV);
     ImgFam * layerHoriOutput =
         filterFamApplyConvolutionSameSizeDiff(filtersHori,inputH);
+    deleteFilterFam(filtersVert);
+    deleteFilterFam(filtersHori);
     
     ImgFam * layerMaxPoolVertOutput=
         imgFamDownSampleMax(layerVertOutput,poolsize,stride);
     ImgFam * layerMaxPoolHoriOutput=
         imgFamDownSampleMax(layerHoriOutput,poolsize,stride);
+    deleteImgFam(layerVertOutput);
+    deleteImgFam(layerHoriOutput);
+    
     ImgFam * betterContrastHori2 =
         imgFamLuminosityScale(layerMaxPoolHoriOutput);
     ImgFam * betterContrastVert2 =
         imgFamLuminosityScale(layerMaxPoolVertOutput);
+    deleteImgFam(layerMaxPoolVertOutput);
+    deleteImgFam(layerMaxPoolHoriOutput);
+    
     if (betterContrastHori2->count!=1 ||
         betterContrastVert2->count!=1) {
         ERROR("Wrong size.","");
@@ -294,6 +302,12 @@ int gridLocate(Img * img,
     HERED(maxCorrelationHori);
     HERE("maxCorrelationVer");
     HERED(maxCorrelationVer);
+
+    deleteImg(flattenedVert);
+    deleteImg(flattenedHori);
+
+    deleteImg(layer1HO);
+    deleteImg(layer1VO);
     return 0;
 }
 
