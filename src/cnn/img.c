@@ -51,8 +51,9 @@ Img * newImgColor(int w, int h, unsigned char c) {
 }
 
 /**
- * @brief create an image of a given color
- * @param filename name of the file to read
+ * @brief create an image of a vertical black bar on a square white background
+ * @param s size of the image
+ * @param w width of the back bar
  * @return a newly allocated image.
  */
 Img * newImgVerticalBar(int s,int w) {
@@ -65,32 +66,115 @@ Img * newImgVerticalBar(int s,int w) {
     }
     return answer;
 }
+
 /**
- * @brief create an image with a black square
- * on a 31x31 white background.
- * @param s side of the square in pixel
+ * @brief create an image of a vertical black bar on a rectangular
+ *        white background
+ * @param sx horizontal size of the image
+ * @param sy vertical size of the image
+ * @param w width of the back bar
  * @return a newly allocated image.
  */
-Img * newImgSquare(int s) {
-    int w=31;
-    Img * answer = newImgColor(w,w,255);
-    int m=w/2;
-    if (s<w-1) {
-        for (int y=m-s/2;y<m-s/2+s;++y) {
-            answer->data[m-s/2+w*y]=0;
+Img * newImgVerticalBarInRect(int sx, int sy, int w) {
+    Img * answer = newImgColor(sx,sy,255);
+    int m=sx/2;
+    if (m<w) {
+        ERROR("Wrong size.","");
+    }
+    // put some grey arond the bar so that the
+    // equivalent filter is 0
+    for (int x=m-w;x<=m+w;++x) {
+        for (int y=0;y<sy;++y) {
+            answer->data[x+sx*y]=128;
         }
-        for (int y=m-s/2;y<m-s/2+s;++y) {
-            answer->data[m-s/2+s-1+w*y]=0;
-        }
-        for (int x=m-s/2;x<m-s/2+s;++x) {
-            answer->data[x+w*(m-s/2)]=0;
-        }
-        for (int x=m-s/2;x<m-s/2+s;++x) {
-            answer->data[x+w*(m-s/2+s-1)]=0;
+    }
+    for (int x=m-w/2;x<m-w/2+w;++x) {
+        for (int y=0;y<sy;++y) {
+            answer->data[x+sx*y]=0;
         }
     }
     return answer;
 }
+/**
+ * @brief create a 3x3 image to perform edge detection.
+ * @return a newly allocated image.
+ */
+Img * newImg33edge() {
+    int c=16;
+    int b=c>>2;
+    unsigned char a[] = {
+        128+c-b, 128+c+b, 128+c-b,
+        128+c+b, 128-8*c, 128+c+b,
+        128+c-b, 128+c+b, 128+c-b
+    };
+    return newImgFromArray(3,3,a);
+}
+
+/**
+ * @brief create an image with a black cross
+ *        on a w by w white background.
+ * @param s size of the cross
+ * @param w side of the image
+ * @param t thickness of the cross
+ * @return a newly allocated image.
+ */
+Img * newImgCross(int s,int w,int t) {
+    Img * answer = newImgColor(w,w,255);
+    int m=w/2;
+    int count=0;
+    while (count<t && count<m) {
+        if (s<w-1 && s>0) {
+            for (int y=m-s/2;y<m-s/2+s;++y) {
+                answer->data[m+count+w*y]=0;
+            }
+            for (int x=m-s/2;x<m-s/2+s;++x) {
+                answer->data[x+w*(m+count)]=0;
+            }
+            for (int y=m-s/2;y<m-s/2+s;++y) {
+                answer->data[m-count+w*y]=0;
+            }
+            for (int x=m-s/2;x<m-s/2+s;++x) {
+                answer->data[x+w*(m-count)]=0;
+            }
+        }
+        count++;
+    }
+    return answer;
+}
+
+/**
+ * @brief create an image with a black square
+ * on a w by w white background.
+ * @param s side of the square in pixel
+ * @param w side of the image
+ * @param t thickness
+ * @return a newly allocated image.
+ */
+Img * newImgSquare(int s,int w,int t) {
+    Img * answer = newImgColor(w,w,255);
+    int m=w/2;
+    int count=0;
+    while (count<t) {
+        if (s<w-1 && s>0) {
+            for (int y=m-s/2;y<m-s/2+s;++y) {
+                answer->data[m-s/2+w*y]=0;
+            }
+            for (int y=m-s/2;y<m-s/2+s;++y) {
+                answer->data[m-s/2+s-1+w*y]=0;
+            }
+            for (int x=m-s/2;x<m-s/2+s;++x) {
+                answer->data[x+w*(m-s/2)]=0;
+            }
+            for (int x=m-s/2;x<m-s/2+s;++x) {
+                answer->data[x+w*(m-s/2+s-1)]=0;
+            }
+        }
+        count++;
+        s--;
+    }
+    return answer;
+}
+
 /**
  * @brief create an image with 9x9 black dots
  * on a picture of size w times w.
@@ -102,7 +186,6 @@ Img * newImg9By9Dots(int w) {
     float step=w/9.;
     float stepOverTwo=step/2.;
     float stepOverThree=step/2;
-    float stepOverTwoSq=stepOverTwo*stepOverTwo;
     float stepOverThreeSq=stepOverThree*stepOverThree;
     for (int x=0;x<w;++x) {
         for (int y=0;y<w;++y) {
@@ -116,6 +199,44 @@ Img * newImg9By9Dots(int w) {
     }
     return answer;
 }
+
+/**
+ * @brief Creates an image with equaly separated N black dots
+ *        on a picture of size w by 1 pixel.
+ *
+ *        First point is located at w/N/2 from the left border of
+ *        the picture, then second at w/2/N+w/N,
+ *        third at w/2/N+2*w/N, N-th point is located  at 
+ *        w/2/N+(N-1)*w/N=w-w/2/N.
+ *        So N-th point is at w/N/2 from the right border of
+ *        the picture.
+ * @param N number of back dots to put
+ * @param w width of the picture
+ * @return a newly allocated image.
+ */
+Img * newImgNDotsHori(int N, int w) {
+    // create a w by 1 white image
+    Img * answer = newImgColor(w,1,255);
+    // space between dots is w/N
+    float step=((float)w)/((float)N);
+    // we begin at step/2 from the border
+    float stepOverTwo=step/2.;
+    float stepOverFour=step/4;
+    float stepOverFourSq=stepOverFour*stepOverFour;
+    for (int x=0;x<w;++x) {
+        // horizontal position of the closest black dot
+        float xr = round((x-stepOverTwo)/step)*step+stepOverTwo;
+        // compute distance to the closest black dot
+        float d = fabs(xr-x);
+        float dmax=3;
+        if (d<dmax) {
+            // we are close to a black dot so we darken the pixel
+            answer->data[x]=INBYTE((int)(d*255/dmax));
+        }
+    }
+    return answer;
+}
+
 /**
  * @brief create an image of a given color
  * @param filename name of the file to read
@@ -175,7 +296,6 @@ void my_error_exit (j_common_ptr cinfo) {
     /* Return control to the setjmp point */
     longjmp(myerr->setjmp_buffer, 1);
 }
-
 
 /**
  * @brief create an image from a jpeg file
@@ -368,6 +488,7 @@ void deleteImg(Img*myImg) {
     free(myImg);
 }
 
+
 /**
  * @brief Get the value a pixel for a given color.
  * Zero is returned if the pixel is out of the picture.
@@ -382,7 +503,8 @@ unsigned char imgGetVal(Img*p,int x, int y) {
 }
 
 /**
- * Displays an image with numerical values.
+ * @brief Displays an image with numerical values.
+ * @param myImg image to display in the terminal.
  */
 void imgPrint(Img*myImg) {
     for(int y = 0; y < myImg->height; y++) {
@@ -391,6 +513,32 @@ void imgPrint(Img*myImg) {
         }
         printf("\n");
     }
+}
+
+/**
+ * @brief draws a rectangle on the image
+ * @param myImg image on which to draw the rectangle
+ * @param xmin horizontal position of lower left corner 
+ * @param ymin vertical position of lower left corner 
+ * @param xmax horizontal position of upper right corner 
+ * @param ymax vertical position of upper right corner 
+ */
+void imgDrawRect(Img*myImg,int xmin,int ymin,int xmax,int ymax) {
+    if (xmin<0 || ymin<0 || xmax >myImg->width || myImg->height<ymax ||
+        xmin>=xmax || ymin>=ymax ) {
+        fprintf(stderr,"rectangle : %d %d %d %d\n",xmin,ymin,xmax,ymax);
+        fprintf(stderr,"image size is %d %d\n",myImg->width,myImg->height);
+        ERROR("Wrong size.","");
+    }
+    for(int x = xmin; x <xmax; x++) {
+        myImg->data[x+myImg->width*ymin]=(x>>2)%2?255:0;
+        myImg->data[x+myImg->width*ymax]=(x>>2)%2?255:0;
+    }
+    for(int y = ymin; y <ymax; y++) {
+        myImg->data[xmin+myImg->width*y]=(y>>2)%2?255:0;
+        myImg->data[xmax+myImg->width*y]=(y>>2)%2?255:0;
+    }
+    
 }
 
 /**
@@ -613,14 +761,19 @@ Img* imgLuminosityScale(Img*in) {
 
 /**
  * @brief perform a convolution between an image and a filter
- *     applying a threshold given by intFilter.
+ *        with unsigned char.
+ *
+ * The resulting image size is in->width-filter->img->width+1 by
+ * in->height-filter->img->height+1.
  * @param in the input picture 
  * @param filter the filter to use
  * @return the newly allocated picture with represents the convolution.
  */
 Img* imgConvolution(Img*in,Filter*filter) {
-    if (in->width<filter->img->width || in->height<filter->img->height)
-        ERROR("Wrong size","");
+    if (in->width<filter->img->width)
+        ERROR("Wrong width","");
+    if (in->height<filter->img->height)
+        ERROR("Wrong height","");
     int aw=in->width-filter->img->width+1;
     int ah=in->height-filter->img->height+1;
     Img * answer = newImgColor(aw,ah,0);
@@ -635,7 +788,134 @@ Img* imgConvolution(Img*in,Filter*filter) {
             answer->data[x+aw*y]=
                 (v<filter->threshold)?0
                 :(v>filter->maxVal)?255
-                :255*(v-filter->threshold)/(filter->maxVal-filter->threshold);
+                :(255*(v-filter->threshold))/(filter->maxVal-filter->threshold);
+        }
+    }
+    return answer;
+}
+
+/**
+ * @brief perform a convolution between an image and a filter
+ *        with unsigned char.
+ *
+ * The resulting image size is in->width-filter->img->width+1 by
+ * in->height-filter->img->height+1.
+ * @param in the input picture 
+ * @param filter the filter to use
+ * @return the newly allocated picture with represents the convolution.
+ */
+Img* imgConvolutionDiff(Img*in,Filter*filter) {
+    if (in->width<filter->img->width)
+        ERROR("Wrong width","");
+    if (in->height<filter->img->height)
+        ERROR("Wrong height","");
+    int aw=in->width-filter->img->width+1;
+    int ah=in->height-filter->img->height+1;
+    Img * answer = newImgColor(aw,ah,0);
+    for(int y = 0; y < ah; y++) {
+        for(int x = 0; x < aw; x++) {
+            long int v=0;
+            for(int yy = 0; yy < filter->img->height; yy++) {
+                for(int xx = 0; xx < filter->img->width; xx++) {
+                    v+=((int)imgGetVal(in,x+xx,y+yy))*
+                        (((int)imgGetVal(filter->img,xx,yy))-128);
+                }
+            }
+            answer->data[x+aw*y]=
+                (v<filter->threshold)?0
+                :(v>filter->maxVal)?255
+                :(255*(v-filter->threshold))/(filter->maxVal-filter->threshold);
+        }
+    }
+    return answer;
+}
+
+/**
+ * @brief perform a convolution between an image and a filter
+ *     applying a threshold given by intFilter and only positive numbers.
+ *
+ * The resulting image size is in->width by in->height.
+ * @param in the input picture 
+ * @param filter the filter to use
+ * @return the newly allocated picture with represents the convolution.
+ */
+Img* imgConvolutionSameSize(Img*in,Filter*filter) {
+    if (in->width<filter->img->width || in->height<filter->img->height)
+        ERROR("Wrong size","");
+    int wfOver2=filter->img->width/2;
+    int hfOver2=filter->img->height/2;
+    Img * answer = newImgColor(in->width,in->height,0);
+    for(int y = 0; y < in->height; y++) {
+        for(int x = 0; x < in->width; x++) {
+            long int v=0;
+            for(int yy = 0; yy < filter->img->height; yy++) {
+                for(int xx = 0; xx < filter->img->width; xx++) {
+                    int xxx=x+xx-wfOver2;
+                    int yyy=y+yy-hfOver2;
+                    if (xxx>=0 && yyy>=0 && xxx<in->width && yyy<in->height) {
+                        v+=imgGetVal(in,xxx,yyy)*imgGetVal(filter->img,xx,yy);
+                    }
+                }
+            }
+            //HERE("___v,maxval,threshold,percent__________________");
+            //HERED((int)v);
+            //HERED((int)filter->maxVal);
+            //HERED((int)filter->threshold);
+            //HERED((int)filter->percent);
+            answer->data[x+in->width*y]=
+                (v<filter->threshold)?0
+                :(v>filter->maxVal)?255
+                :(255*(v-filter->threshold))/(filter->maxVal-filter->threshold);
+        }
+    }
+    return answer;
+}
+/**
+ * @brief perform a convolution between an image and a filter
+ *     applying a threshold given by intFilter.
+ *
+ * The resulting image size is in->width by in->height.
+ * @param in the input picture 
+ * @param filter the filter to use
+ * @return the newly allocated picture with represents the convolution.
+ */
+Img* imgConvolutionSameSizeDiff(Img*in,Filter*filter) {
+    if (in->width<filter->img->width || in->height<filter->img->height)
+        ERROR("Wrong size","");
+    int wfOver2=filter->img->width/2;
+    int hfOver2=filter->img->height/2;
+    Img * answer = newImgColor(in->width,in->height,0);
+    for(int y = 0; y < in->height; y++) {
+        for(int x = 0; x < in->width; x++) {
+            long int v=0;
+            for(int yy = 0; yy < filter->img->height; yy++) {
+                for(int xx = 0; xx < filter->img->width; xx++) {
+                    int xxx=x+xx-wfOver2;
+                    int yyy=y+yy-hfOver2;
+                    if (xxx>=0 && yyy>=0 && xxx<in->width && yyy<in->height) {
+                        
+                        v+=((int)imgGetVal(in,xxx,yyy))*
+                            (((int)imgGetVal(filter->img,xx,yy))-128);
+                        /*
+                        int d = imgGetVal(in,xxx,yyy)
+                            -imgGetVal(filter->img,xx,yy);
+                        v+=d*d;
+                        */
+                    }
+                }
+            }
+            /*
+            HERE("___v,maxval,threshold,percent__________________");
+            HERED((int)v);
+            HERED((int)filter->maxVal);
+            HERED((int)filter->threshold);
+            HERED((int)filter->percent);
+            */
+
+            answer->data[x+in->width*y]=
+                (v<filter->threshold)?0
+                :(v>filter->maxVal)?255
+                :(255*(v-filter->threshold))/(filter->maxVal-filter->threshold);
         }
     }
     return answer;
@@ -675,6 +955,46 @@ Img* imgDownSampleMax(Img* img,int poolsize,int stride) {
 }
 
 /**
+ * @brief Divide the size of an image by two.
+ * @param img an image
+ * @return same image as img but with a size scaled down by 2.
+ */
+Img* imgDivideByTwo(Img* img) {
+    Img * answer = newImgColor(img->width/2,img->height/2,255);
+    for (int y=0;y<img->height/2;++y) {
+        int o = (img->width>>1)*y;
+        for (int x=0;x<img->width/2;++x) {
+            // compute the average of 4 pixels
+            answer->data[x+o] =
+                (img->data[(x<<1)+img->width*(y<<1)] +
+                 img->data[(x<<1)+1+img->width*(y<<1)] +
+                 img->data[(x<<1)+img->width*((y<<1)+1)] +
+                 img->data[(x<<1)+1+img->width*((y<<1)+1)] )>>2;
+        }
+    }
+    return answer;
+}
+
+/**
+ * @brief Rotates an image by 90 degrees.
+ * 
+ * Resulting image exchange height and width with original image.
+ * @param img to rotate
+ * @return rotated image
+ */
+Img* imgRotate90(Img* img) {
+    // exchange height and width
+    Img * answer = newImgColor(img->height,img->width,255); 
+    for (int y=0;y<answer->height;++y) {
+        int o = answer->width*y;
+        for (int x=0;x<answer->width;++x) {
+            answer->data[x+o]=img->data[y+img->width*x];
+        }
+    }
+    return answer;
+}
+
+/**
  * @brief Rotates an image
  * @param img to rotate
  * @param deg degrees to rotate
@@ -688,8 +1008,7 @@ Img* imgRotate(Img* img,int deg) {
     float s = sin(rad);
     int w=img->width;
     int h=img->height;
-    float eps=0.0001;
-    float meps=-0.0001;
+    float eps=0.0001;    // epsilum, considered as zero   
     for (int x=0;x<w;++x) {
         for (int y=0;y<h;++y) {
             double xd= (x-w/2)*c - (y-h/2)*s + w/2;
@@ -704,13 +1023,13 @@ Img* imgRotate(Img* img,int deg) {
                 double cf=sqrt((xd-xc)*(xd-xc)+(yd-yf)*(yd-yf));
                 double cc=sqrt((xd-xc)*(xd-xc)+(yd-yc)*(yd-yc));
                 int v=255;
-                if (meps<ff && ff<eps) {
+                if (-eps<ff && ff<eps) {
                     v=img->data[(int)(xf+w*yf)];
-                } else if (meps<fc && fc<eps) {
+                } else if (-eps<fc && fc<eps) {
                     v=img->data[(int)(xf+w*yc)];
-                } else if (meps<cf && cf<eps) {
+                } else if (-eps<cf && cf<eps) {
                     v=img->data[(int)(xc+w*yf)];
-                } else if (meps<cc && cc<eps) {
+                } else if (-eps<cc && cc<eps) {
                     v=img->data[(int)(xc+w*yc)];
                 } else {
                     // not too close to any point, so compute average
@@ -799,6 +1118,13 @@ void imgUsage(FILE*f,char*name) {
     fprintf(f,"        Blurs the image with a radius of r.\n");
     fprintf(f,"    [-c|--contrast] :\n");
     fprintf(f,"        Raises contrast level.\n");
+    fprintf(f,"    --conv <filename> <percent>:\n");
+    fprintf(f,"        load image in <filename> and use it as a convolution\n");
+    fprintf(f,"        filter with a threshold set at <percent>.\n");
+    fprintf(f,"    --cross <n> <w> <t>:\n");
+    fprintf(f,"        Generates a black cross on a white background. \n");
+    fprintf(f,"        The cross size is n by n pixels in a w by w\n");
+    fprintf(f,"        picture. The cross line is <t> pixels thick.\n");
     fprintf(f,"    [-f|--flatten] :\n");
     fprintf(f,"        Flattens the contrast.\n");
     fprintf(f,"    [-h|--help] :\n");
@@ -812,9 +1138,10 @@ void imgUsage(FILE*f,char*name) {
     fprintf(f,"        Prints on stdout numerical value of current image.\n");
     fprintf(f,"    [-s|--scale] <n>:\n");
     fprintf(f,"        Scales image by a factor n.\n");
-    fprintf(f,"    --square <n>:\n");
+    fprintf(f,"    --square <n> <w> <t>:\n");
     fprintf(f,"        Generates a black square on a white background. \n");
-    fprintf(f,"        The square size is n by n pixels in a 21x21 picture.\n");
+    fprintf(f,"        The square size is n by n pixels in a w by w\n");
+    fprintf(f,"        picture. The square line is <t> pixels thick.\n");
     fprintf(f,"    --sudoku <n>:\n");
     fprintf(f,"        Generates a black empty sudoku grid of n pixels large in a \n");
     fprintf(f,"        224 by 224 picture with white background.\n");
@@ -825,17 +1152,38 @@ void imgUsage(FILE*f,char*name) {
     fprintf(f,"        in a white square of size <s>.\n");
     fprintf(f,"    --version :\n");
     fprintf(f,"        Displays the current version of %s.\n",bname);
+    fprintf(f,"    --1d-dots <n> <w>:\n");
+    fprintf(f,"        Generates <n> black dots on a white background, \n");
+    fprintf(f,"        in one dimension: the generated image size is <w> \n");
+    fprintf(f,"        by 1 pixels.\n");
+    fprintf(f,"    --3x3-edge :\n");
+    fprintf(f,"        Generates a 3x3 image to perform edge detection if \n");
+    fprintf(f,"        used as convolution filter.\n");
     fprintf(f,"    [-3d|--3d] :\n");
     fprintf(f,"        Draws an isometric-like view.\n");
     fprintf(f,"        in a 224x224 image.\n");
     fprintf(f,"    --9x9dots <n>:\n");
     fprintf(f,"        Generates 9x9 black dots on a white background. \n");
     fprintf(f,"        The image size is n by n pixels.\n");
+                                                                
     fprintf(f,"Examples:\n");
     fprintf(f,"    %s --sudoku 200 --rotate 5 --blur 2 out.png\n",bname);
     fprintf(f,"        Generates an empty sudoku grid, then rotate it by 5\n");
     fprintf(f,"        degrees, then blurs the image with a radius of 2, then\n");
     fprintf(f,"        save the result in file out.png.\n");
+    fprintf(f,"    \n");
+    fprintf(f,"    %s --3x3-edge edgefilter.png\n",bname);
+    fprintf(f,"        Creates a 3x3 filter to be used for edge detection.\n");
+    fprintf(f,"        Save it under edgefilter.png.\n");
+    fprintf(f,"    \n");
+    fprintf(f,"    %s mypic.png --conv edgefilter.png -10 out.png\n",
+            bname);
+    fprintf(f,"        Apply the convolution filter edgefilter.png to\n");
+    fprintf(f,"        mypic.png and save the result under out.png.\n");
+    fprintf(f,"        -10%% of threshold is applied. Put a lower percentage\n");
+    fprintf(f,"        for brighter images, a higher one for a darker.\n");
+    fprintf(f,"    \n");
+    
     fprintf(f,"    %s my_photo.jpg --lum my_new_photo.png\n",bname);
     fprintf(f,"        Reads file my_photo.jpg increase luminosity to stretch from\n");
     fprintf(f,"        dark to very clear and save the result in my_new_photo.png.\n");
@@ -864,6 +1212,12 @@ int imgMain(int argc, char *argv[]) {
         currentImage=newImgRead(argv[1]);
         i=2;
     }
+#define NOT_ENOUGH                                        \
+    if (i>=argc) {                                        \
+        imgUsage(stderr,argv[0]);                         \
+        ERROR("not enough arguments.","");                \
+    }
+
     Img * newImage=NULL;
     while (i<argc) {
         if (argv[i][0]!='-') {
@@ -872,31 +1226,75 @@ int imgMain(int argc, char *argv[]) {
             if (strcmp(argv[i],"--blur")==0 ||
                 strcmp(argv[i],"-b")==0 ) {
                 ++i;
+                NOT_ENOUGH;
                 int s=atoi(argv[i]);
                 newImage=imgBlur(currentImage,s);
+            } else if (strcmp(argv[i],"--cross")==0) {
+                ++i;
+                NOT_ENOUGH;
+                int s=atoi(argv[i]);
+                ++i;
+                NOT_ENOUGH;
+                int w=atoi(argv[i]);
+                ++i;
+                NOT_ENOUGH;
+                int t=atoi(argv[i]);
+                newImage=newImgCross(s,w,t);
             } else if (strcmp(argv[i],"--square")==0) {
                 ++i;
+                NOT_ENOUGH;
                 int s=atoi(argv[i]);
-                newImage=newImgSquare(s);
+                ++i;
+                NOT_ENOUGH;
+                int w=atoi(argv[i]);
+                ++i;
+                NOT_ENOUGH;
+                int t=atoi(argv[i]);
+                newImage=newImgSquare(s,w,t);
+            } else if (strcmp(argv[i],"--conv")==0) {
+                ++i;
+                NOT_ENOUGH;
+                char * fileName = argv[i];
+                ++i;
+                NOT_ENOUGH;
+                int percent=atoi(argv[i]);
+                Filter * f =newFilter(newImgRead(fileName),percent);
+                newImage=imgConvolutionSameSizeDiff(currentImage,f);
+                deleteFilter(f);
             } else if (strcmp(argv[i],"--9x9dots")==0) {
                 ++i;
+                NOT_ENOUGH;
                 int w=atoi(argv[i]);
                 newImage=newImg9By9Dots(w);
+            } else if (strcmp(argv[i],"--3x3-edge")==0) {
+                newImage=newImg33edge();
+            } else if (strcmp(argv[i],"--1d-dots")==0) {
+                ++i;
+                NOT_ENOUGH;
+                int N=atoi(argv[i]);
+                ++i;
+                NOT_ENOUGH;
+                int w=atoi(argv[i]);
+                newImage=newImgNDotsHori(N,w);
             } else if (strcmp(argv[i],"--vertical")==0 ||
                 strcmp(argv[i],"-v")==0 ) {
                 ++i;
+                NOT_ENOUGH;
                 int s=atoi(argv[i]);
                 ++i;
+                NOT_ENOUGH;
                 int w=atoi(argv[i]);
                 newImage=newImgVerticalBar(s,w);
             } else if (strcmp(argv[i],"--scale")==0 ||
                 strcmp(argv[i],"-s")==0 ) {
                 ++i;
+                NOT_ENOUGH;
                 int s=atoi(argv[i]);
                 newImage=imgScale(currentImage,s);
             } else if (strcmp(argv[i],"--rotate")==0 ||
                 strcmp(argv[i],"-r")==0 ) {
                 ++i;
+                NOT_ENOUGH;
                 int s=atoi(argv[i]);
                 newImage=imgRotate(currentImage,s);
             } else if (strcmp(argv[i],"--lum")==0 ||

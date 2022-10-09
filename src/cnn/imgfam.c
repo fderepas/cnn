@@ -42,6 +42,21 @@ void imgFamSetImg(ImgFam*imgFam,int i,Img*img) {
 }
 
 /**
+ * @brief applies the imgLuminosityScale function to all
+ *        images in a familly.
+ * @param imgFam the familly on which we want to apply imgLuminosityScale.
+ * @return the newly allocated familly where imgLuminosityScale has been 
+ *         applied.
+ */
+ImgFam* imgFamLuminosityScale(ImgFam*imgFam) {
+    ImgFam * answer = newImgFam(imgFam->count);
+    for (int i=0;i<imgFam->count;++i) {
+        imgFamSetImg(answer,i,imgLuminosityScale(imgFam->imgs[i]));
+    }
+    return answer;
+}
+
+/**
  * @brief dowm sample all images in a familly using a max pooling strategy.
  * @param imgFam the familly of images in which we are going to down sample.
  * @param poolsize size of the square in which we are taking the max.
@@ -82,7 +97,7 @@ ImgFam * imgFamDownSampleAvg(ImgFam* imgFam,int poolsize,int stride) {
 void imgFamWrite(ImgFam*imgFam,char*basename) {
     char s[99];
     for (int i=0;i<imgFam->count;++i) {
-        sprintf(s,"%s_%d.png",basename,i);
+        snprintf(s,99,"%s_%d.png",basename,i);
         imgWrite(imgFam->imgs[i],s);
     }
 }
@@ -100,7 +115,7 @@ ImgFam * imgFamRead(char*basename) {
     int count=0;
     int found=1;
     while (found) {
-        sprintf(s,"%s_%d.png",basename,count);
+        snprintf(s,99,"%s_%d.png",basename,count);
         FILE * f = fopen(s,"r");
         if (f!=NULL) {
             fclose(f);
@@ -111,7 +126,7 @@ ImgFam * imgFamRead(char*basename) {
     }
     ImgFam * answer = newImgFam(count);
     for (int i=0;i<answer->count;++i) {
-        sprintf(s,"%s_%d.png",basename,i);
+        snprintf(s,99,"%s_%d.png",basename,i);
         imgFamSetImg(answer,i,newImgRead(s));
     }
     return answer;
@@ -141,3 +156,11 @@ Img* imgFamScalar(ImgFam* if1,FilterFam* if2) {
     }
     return answer;
 }
+
+void imgFamPrint(ImgFam* ifa) {
+    for (int i=0;i<ifa->count;++i) {
+        printf("=-=-=-=-=-=-=-=-=-=-=-=-= %d/%d\n",i,ifa->count);
+        imgPrint(ifa->imgs[i]);
+    }
+}
+

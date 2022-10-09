@@ -5,7 +5,7 @@ Here how to compile the code
 ```
 ./autogen.sh
 ./configure --prefix=$HOME/cnn CFLAGS='-Wall -g'
-cd src/grid
+cd src/cnn
 make
 make install
 ```
@@ -19,7 +19,7 @@ make install
 
 ## img
 
-```img``` is generated in the ```src/grid``` directory and copied ```$prefix/bin```. It has been made to manipulate images.
+```img``` is generated in directory ```src/cnn```  and copied in directory ```$prefix/bin```. It has been made to manipulate images.
 
 ```
 img usage:
@@ -74,7 +74,7 @@ Examples:
 ## digits
 
 
-```digits``` is generated in the ```src/grid``` directory and copied ```$prefix/bin```. It is made to test digit recognition.
+```digits``` is generated in the ```src/cnn``` directory and copied ```$prefix/bin```. It is made to test digit recognition.
 
 ```
 digits usage:
@@ -93,7 +93,7 @@ Where option is one of:
 ## clang on ubuntu
 ./autogen.sh
 ./configure --prefix=$HOME/cnn CFLAGS='-Wall -g' CC='clang'
-cd src/grid
+cd src/cnn
 make
 
 ## homebrew with gcc on mac
@@ -105,18 +105,19 @@ make
 ./configure --prefix=$HOME/cnn CFLAGS='-Wall -g' CC='clang'
 
 ## to install libpng on mac using clang (not homebrew related)
-#wget http://prdownloads.sourceforge.net/libpng/libpng-1.6.38.tar.gz
-#tar xvfz libpng-1.6.38.tar.gz
-#cd libpng-1.6.38
+```
 git clone https://github.com/glennrp/libpng
 cd libpng
 ./configure --prefix=/usr/local CC='clang'
 make
 sudo make install
+```
 
 ## to install libjpeg on mac using clang (not homebrew related)
+```
 git clone https://github.com/libjpeg-turbo/libjpeg-turbo
 cd libjpeg-turbo
 CC=clang cmake -G"Unix Makefiles" 
 make
 sudo cmake --install . --prefix /usr/local
+```

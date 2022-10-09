@@ -80,7 +80,7 @@ char * stringCopy(char * s) {
 char * stringAdd(char * a,char *b) {
     int l = strlen(a)+strlen(b)+1;
     char * answer = (char*)malloc(l);
-    sprintf(answer,"%s%s",a,b);
+    snprintf(answer,l,"%s%s",a,b);
     return answer;
 }
 

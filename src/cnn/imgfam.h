@@ -30,6 +30,8 @@ ImgFam * imgFamDownSampleAvg(ImgFam*,int,int);
 void imgFamWrite(ImgFam*,char*);
 ImgFam * imgFamRead(char*);
 Img* imgFamScalar(ImgFam*,FilterFam*);
+void imgFamPrint(ImgFam*);
+ImgFam* imgFamLuminosityScale(ImgFam*in);
 void deleteImgFam(ImgFam *);
 
 #endif

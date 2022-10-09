@@ -14,14 +14,14 @@
 Digits * newDigits(char * layerPrefix) {
     Digits * answer = (Digits*)malloc(sizeof(Digits));
     char layer1location[strlen(layerPrefix)+10];
-    sprintf(layer1location,"%s_1",layerPrefix);
+    snprintf(layer1location,strlen(layerPrefix)+10,"%s_1",layerPrefix);
     if (layerCount(layer1location)>0) {
         answer->layer1 = newLayer("layer1",layer1location,2,2);
     } else {
         answer->layer1=NULL;
     }
     char layer2location[strlen(layerPrefix)+10];
-    sprintf(layer2location,"%s_2",layerPrefix);
+    snprintf(layer2location,strlen(layerPrefix)+10,"%s_2",layerPrefix);
     if (layerCount(layer1location)>0) {
         answer->layer2 = newLayer("layer2",layer2location,2,2);
     } else {
@@ -62,7 +62,8 @@ int digitsGetDefaultLayerPrefixSize() {
  * @see digitsGetDefaultLayerPrefixSize
  */
 void digitsGetDefaultLayerPrefix(char* layerPrefix) {
-    sprintf(layerPrefix,"%s/digits/layer",CFG_DATAROOTDIR);
+    snprintf(layerPrefix,digitsGetDefaultLayerPrefixSize(),
+             "%s/digits/layer",CFG_DATAROOTDIR);
 }
 
 /**
@@ -111,7 +112,7 @@ void digitsTestLayer1(char * layerPrefix) {
         testImg[i]=imgInvert(tmp);
         deleteImg(tmp);
         char s[99];
-        sprintf(s,"test_digits_layer_1_%d.png",i);
+        snprintf(s,99,"test_digits_layer_1_%d.png",i);
         imgWrite(testImg[i],s);
     }
     deleteImg(base);
@@ -140,7 +141,7 @@ void digitsTestLayer1(char * layerPrefix) {
             ERROR("Wrong index.","");
         }
         char s[99];
-        sprintf(s,"test_digits_l1out_%d",i);
+        snprintf(s,99,"test_digits_l1out_%d",i);
         imgFamWrite(firstLayerOutput,s);
     }
 
@@ -154,7 +155,7 @@ void digitsTestLayer1(char * layerPrefix) {
         testImgPlus15[i]=imgInvert(tmp);
         deleteImg(tmp);
         char s[99];
-        sprintf(s,"test_digits_layer_1_15_%d.png",i);
+        snprintf(s,99,"test_digits_layer_1_15_%d.png",i);
         imgWrite(testImgPlus15[i],s);
     }
     deleteImg(base);
@@ -165,7 +166,7 @@ void digitsTestLayer1(char * layerPrefix) {
         ImgFam * firstLayerOutput =
             layerPassImg(d->layer1,testImgPlus15[i]);
         char s[99];
-        sprintf(s,"test_digits_l1out_15_%d",i);
+        snprintf(s,99,"test_digits_l1out_15_%d",i);
         imgFamWrite(firstLayerOutput,s);
 
         
@@ -190,7 +191,7 @@ void digitsGenerateLayer2 (char * layerPrefix) {
     }
     for (int n=1;n<=9;++n) {
         char s[99];
-        sprintf(s,"%s/digits/reference_%d.png",CFG_DATAROOTDIR,n);
+        snprintf(s,99,"%s/digits/reference_%d.png",CFG_DATAROOTDIR,n);
         if (access(s, F_OK) != 0) {
             ERROR("File not found: ",s);
         }
@@ -199,7 +200,7 @@ void digitsGenerateLayer2 (char * layerPrefix) {
         deleteImg(tmpimg);
         ImgFam * firstLayerOutput =
             layerPassImg(d->layer1,img);
-        sprintf(s,"_layer_%d",n);
+        snprintf(s,99,"_layer_%d",n);
         imgFamWrite(firstLayerOutput,s);
         
         // free allocated memory
@@ -221,7 +222,8 @@ void digitsGenerateLayer2 (char * layerPrefix) {
  */
 void digitsGenerateImageOfFont(char*directory,int numFonts) {
     char * tmpFile = (char*)malloc(strlen(directory)+40);
-    sprintf(tmpFile,"%s/generate_png_from_font.sh",directory);
+    snprintf(tmpFile,strlen(directory)+40,
+             "%s/generate_png_from_font.sh",directory);
     FILE * f = fopen(tmpFile,"w");
     HERE(tmpFile);
     fprintf(f,"#/bin/sh\n");
@@ -242,7 +244,7 @@ void digitsGenerateImageOfFont(char*directory,int numFonts) {
     fprintf(f,"done\n");
     fclose(f);
     char cmd[99];
-    sprintf(cmd,"bash %s",tmpFile);
+    snprintf(cmd,99,"bash %s",tmpFile);
     HERE(cmd);
     if (system(cmd)) {
         ERROR("Command failed, maybe 'convert' not found: ",cmd);
@@ -258,18 +260,16 @@ void generateLayer3() {
     FILE * layer3File = fopen("l3.c","w");
     for (int f=1;f<=numFonts;++f) {
         char font[80];
-        //sprintf(font,"%s/digits/reference",CFG_DATAROOTDIR);
-        sprintf(font,"%s/%d",tmpDirName,f);
-
+        snprintf(font,80,"%s/%d",tmpDirName,f);
         
         char s[99];
-        sprintf(s,"%s/digits/layer_1",CFG_DATAROOTDIR);
+        snprintf(s,99,"%s/digits/layer_1",CFG_DATAROOTDIR);
         FilterFam * firstLevelFilters=filterFamRead(s);
         
         FilterFam * secondLevelFilters[10];
         for (int i=1;i<10;++i) {
             char baseName[99];
-            sprintf(baseName,"%s/digits/layer_2_Digit%d",CFG_DATAROOTDIR,i);
+            snprintf(baseName,99,"%s/digits/layer_2_Digit%d",CFG_DATAROOTDIR,i);
             secondLevelFilters[i] = filterFamRead(baseName);
         }
         HERE("+++");
@@ -281,7 +281,7 @@ void generateLayer3() {
         }
         for (int digit=1;digit<10;++digit) {
             char s[99];
-            sprintf(s,"%s_%d.png",font,digit);
+            snprintf(s,99,"%s_%d.png",font,digit);
             Img * tmpimg = newImgRead(s);
             Img * img = imgInvert(tmpimg);
             deleteImg(tmpimg);
@@ -355,20 +355,20 @@ void generateLayer3() {
 void testFilterForDigit(char * font) {
 
     char s[99];
-    sprintf(s,"%s/digits/layer_1",CFG_DATAROOTDIR);
+    snprintf(s,99,"%s/digits/layer_1",CFG_DATAROOTDIR);
     FilterFam * firstLevelFilters=filterFamRead(s);
 
     FilterFam * secondLevelFilters[10];
     for (int i=1;i<10;++i) {
         char baseName[99];
-        sprintf(baseName,"%s/digits/layer_2_Digit%d",CFG_DATAROOTDIR,i);
+        snprintf(baseName,99,"%s/digits/layer_2_Digit%d",CFG_DATAROOTDIR,i);
         secondLevelFilters[i] = filterFamRead(baseName);
     }
     HERE("+++");
     HERE(font);
     for (int digit=1;digit<10;++digit) {
         char s[99];
-        sprintf(s,"%s_%d.png",font,digit);
+        snprintf(s,99,"%s_%d.png",font,digit);
         Img * tmpimg = newImgRead(s);
         Img * img = imgInvert(tmpimg);
         deleteImg(tmpimg);
@@ -413,12 +413,8 @@ void generateTestData() {
     digitsGenerateImageOfFont(tmpDirName,numFonts);
     for (int i=1;i<=numFonts;++i) {
         char fontpath[99];
-        sprintf(fontpath,"%s/%d",tmpDirName,i);
+        snprintf(fontpath,99,"%s/%d",tmpDirName,i);
         testFilterForDigit(fontpath);
-        //testFilterForDigit("/Users/fabrice/cnn/share/digits/reference");
-        //sprintf(fontpath,"%s/share/digits/reference/%d",CFG_DEFAULT_PREFIX,i);
-        //testFilterForDigit(fontpath);
-        //testFilterForDigit("/Users/fabrice/git/cnn/dataset/digits/2");
     }
 }
 

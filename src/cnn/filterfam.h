@@ -25,7 +25,12 @@ typedef struct imgfam ImgFam;
 
 FilterFam * newFilterFam(int);
 ImgFam * filterFamApplyConvolution(FilterFam* filters,Img* img);
+ImgFam * filterFamApplyConvolutionDiff(FilterFam* filters,Img* img);
 ImgFam * filterFamApplyConvolutionOnFam(FilterFam* filters,ImgFam* imgFam);
+ImgFam * filterFamApplyConvolutionSameSize(FilterFam* filters,Img* img);
+ImgFam * filterFamApplyConvolutionSameSizeOnFam(FilterFam* filters,
+                                                ImgFam* imgFam);
+ImgFam * filterFamApplyConvolutionSameSizeDiff(FilterFam* filters,Img* img);
 void filterFamSetFilter(FilterFam*filterFam,int i,Filter*filter);
 void deleteFilterFam(FilterFam *);
 FilterFam * filterFamRead(char*basename);

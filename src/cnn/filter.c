@@ -73,13 +73,12 @@ void filterSetWeight(Filter*f,int w) {
 void filterUpdateValues(Filter*f) {
     f->weight=0;
     f->threshold=0;
-    f->maxVal=0;
-    if (f->percent>100 || f->percent<0) {
+    f->maxVal=f->img->height*f->img->width*255;
+    if (f->percent>100 || f->percent<-100) {
         ERROR("percent should be between 0 and 100.","");
     }
     for(int i = 0; i < f->img->height*f->img->width; i++) {
-        f->weight+=f->img->data[i];
-        f->maxVal+=f->img->data[i]*255;
+        f->weight+=f->img->data[i]-128;
     }
     f->threshold=f->maxVal*f->percent/100;
 }
@@ -95,10 +94,10 @@ void filterUpdateValues(Filter*f) {
 void filterWrite(Filter*f,char*basename) {
     char s[99];
     // save the picture part
-    sprintf(s,"%s.png",basename);
+    snprintf(s,99,"%s.png",basename);
     imgWrite(f->img,s);
     // save the data part
-    sprintf(s,"%s.txt",basename);
+    snprintf(s,99,"%s.txt",basename);
     FILE * fi = fopen(s,"w");
     if (fi==NULL)
         ERROR("Could not open file ",s);
@@ -119,10 +118,10 @@ Filter * newFilterRead(char *basename) {
     Filter * answer = (Filter*) malloc(sizeof(struct filter));
     char s[99];
     // read the picture part
-    sprintf(s,"%s.png",basename);
+    snprintf(s,99,"%s.png",basename);
     answer->img=newImgRead(s);
     // read the data part
-    sprintf(s,"%s.txt",basename);
+    snprintf(s,99,"%s.txt",basename);
     FILE * fi = fopen(s,"r");
     if (fi==NULL)
         ERROR("Could not open file ",s);

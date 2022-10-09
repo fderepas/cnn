@@ -41,7 +41,8 @@ int filterFamCount(char * convFilterLoc) {
     char fname[strlen(convFilterLoc)+10];
     do {
         answer ++;
-        sprintf(fname,"%s_%d.png",convFilterLoc,answer);
+        snprintf(fname,strlen(convFilterLoc)+10,
+                 "%s_%d.png",convFilterLoc,answer);
     } while (access(fname, F_OK) == 0);
     return answer;
 }
@@ -60,7 +61,8 @@ void filterFamSetFilter(FilterFam*filterFam,int i,Filter*filter) {
 }
 
 /**
- * @brief Apply all filter of the familly on an image.
+ * @brief Apply all filter of the familly on an image with 
+ *        a positive convolution.
  * @param filters the familly of filters to apply.
  * @param img the image on which to apply these filters
  * @param the filters to apply.
@@ -69,7 +71,67 @@ void filterFamSetFilter(FilterFam*filterFam,int i,Filter*filter) {
 ImgFam * filterFamApplyConvolution(FilterFam* filters,Img* img) {
     ImgFam * answer = newImgFam (filters->count);
     for (int i=0;i<filters->count;++i) {
+        if (filters->filters[i]==NULL) {
+            ERROR("Not all filters in familly have been initialized.","");
+        }
         imgFamSetImg(answer,i,imgConvolution(img,filters->filters[i]));
+    }
+    return answer;
+}
+
+/**
+ * @brief Apply all filter of the familly on an image.
+ * @param filters the familly of filters to apply.
+ * @param img the image on which to apply these filters
+ * @param the filters to apply.
+ * @return the newly created familly of resulting images.
+ */
+ImgFam * filterFamApplyConvolutionDiff(FilterFam* filters,Img* img) {
+    ImgFam * answer = newImgFam (filters->count);
+    for (int i=0;i<filters->count;++i) {
+        if (filters->filters[i]==NULL) {
+            ERROR("Not all filters in familly have been initialized.","");
+        }
+        imgFamSetImg(answer,i,imgConvolutionDiff(img,filters->filters[i]));
+    }
+    return answer;
+}
+
+/**
+ * @brief Apply all filter of the familly on an image an keep original 
+ *        image size.
+ * @param filters the familly of filters to apply.
+ * @param img the image on which to apply these filters
+ * @param the filters to apply.
+ * @return the newly created familly of resulting images.
+ */
+ImgFam * filterFamApplyConvolutionSameSize(FilterFam* filters,Img* img) {
+    ImgFam * answer = newImgFam (filters->count);
+    for (int i=0;i<filters->count;++i) {
+        if (filters->filters[i]==NULL) {
+            ERROR("Not all filters in familly have been initialized.","");
+        }
+        imgFamSetImg(answer,i,imgConvolutionSameSize(img,filters->filters[i]));
+    }
+    return answer;
+}
+
+
+/**
+ * @brief Apply all filter of the familly on an image an keep original 
+ *        image size.
+ * @param filters the familly of filters to apply.
+ * @param img the image on which to apply these filters
+ * @param the filters to apply.
+ * @return the newly created familly of resulting images.
+ */
+ImgFam * filterFamApplyConvolutionSameSizeDiff(FilterFam* filters,Img* img) {
+    ImgFam * answer = newImgFam (filters->count);
+    for (int i=0;i<filters->count;++i) {
+        if (filters->filters[i]==NULL) {
+            ERROR("Not all filters in familly have been initialized.","");
+        }
+        imgFamSetImg(answer,i,imgConvolutionSameSizeDiff(img,filters->filters[i]));
     }
     return answer;
 }
@@ -93,6 +155,27 @@ ImgFam * filterFamApplyConvolutionOnFam(FilterFam* filters,ImgFam* imgFam) {
 }
 
 /**
+ * @brief Apply all filter of the familly on a familly of images,
+ *        and keep same image size.
+ * @param filters the familly of filters to apply.
+ * @param img the image on which to apply these filters
+ * @param the filters to apply.
+ * @return the newly created familly of resulting images.
+ */
+ImgFam * filterFamApplyConvolutionSameSizeOnFam(FilterFam* filters,
+                                                ImgFam* imgFam)
+{
+    ImgFam * answer = newImgFam (filters->count*imgFam->count);
+    for (int i=0;i<filters->count;++i) {
+        for (int j=0;j<imgFam->count;++j) {
+            int idx=j+i*imgFam->count;
+            imgFamSetImg(answer,idx,imgConvolution(imgFam->imgs[j],
+                                                   filters->filters[i]));
+    }   }
+    return answer;
+}
+
+/**
  * @brief Saves as png files the image familly.
  * @param filterFam the familly to save.
  * @param basename the base name for all files save. The final
@@ -103,7 +186,7 @@ ImgFam * filterFamApplyConvolutionOnFam(FilterFam* filters,ImgFam* imgFam) {
 void filterFamWrite(FilterFam*filterFam,char*basename) {
     char s[99];
     for (int i=0;i<filterFam->count;++i) {
-        sprintf(s,"%s_%d",basename,i);
+        snprintf(s,99,"%s_%d",basename,i);
         filterWrite(filterFam->filters[i],s);
     }
 }
@@ -121,7 +204,7 @@ FilterFam * filterFamRead(char*basename) {
     int count=0;
     int found=1;
     while (found) {
-        sprintf(s,"%s_%d.png",basename,count);
+        snprintf(s,99,"%s_%d.png",basename,count);
         FILE * f = fopen(s,"r");
         if (f!=NULL) {
             fclose(f);
@@ -132,7 +215,7 @@ FilterFam * filterFamRead(char*basename) {
     }
     FilterFam * answer = newFilterFam(count);
     for (int i=0;i<answer->count;++i) {
-        sprintf(s,"%s_%d",basename,i);
+        snprintf(s,99,"%s_%d",basename,i);
         filterFamSetFilter(answer,i,newFilterRead(s));
     }
     return answer;
