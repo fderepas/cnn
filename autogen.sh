@@ -27,11 +27,7 @@ else
         find . -name \*~ -exec rm -f {} \;
         rm -f *.log 
         rm -f aclocal.m4 compile config.h config.status configure depcomp INSTALL install-sh config.in install.sh Makefile Makefile.in missing NEWS stamp-h1 ar-lib 
-	rm -rf autom4te.cache
-        find . -name .deps -exec rm -rf {} \;
-        find . -name Makefile -exec rm -f {} \;
-        find . -name Makefile.in -exec rm -f {} \;
-        find . -name .DS_Store -exec rm -rf {} \;
+	rm -rf autom4te.cache `find . -name .deps`  `find . -name Makefile` `find . -name Makefile.in` `find . -name .DS_Store`
 	rm -f uname_is_linux README
     else
         echo "unknown command $1"

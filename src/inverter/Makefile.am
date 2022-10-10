@@ -1,2 +1,0 @@
-bin_PROGRAMS=simple_png_reader
-simple_png_reader_SOURCES=simple_png_reader.c

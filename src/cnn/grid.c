@@ -2,7 +2,24 @@
 #include "filter.h"
 #include "imgfam.h"
 
+/**
+ * @file grid.c
+ * @brief Implements function defined in grid.h.
+ *
+ * Functions in this file are used to detect the sudoku grid
+ * in the picture.
+ * Is is acheived via 3 convolution filters. First one 
+ * has two parts : 1 detects horizontal lines, the other vertical lines.
+ * Second filters makes sur that the lines are long enough. Third filter
+ * checks the spacing of the 10 lines (horizontal and vertical) that
+ * compose the grid.
+ */
+
+/**
+ * @brief activates debug infos to be printed.
+ */
 int gridDumpDebugInfo=1;
+
 
 /**
  * @brief Generates filters for the convolution layer to 
@@ -204,6 +221,11 @@ int gridIdentifyNPoints(int N,
  * horizontal convolution using filters from gridGetLayerHoriVertFilters.
  * The verification that we get 10 lines horizontally or vertically is 
  * performed by calling function gridIdentifyNPoints.
+ *
+ * This function should not be called on a picture which is too large.
+ * Width and height of the picture between 200 and 400 pixels would be 
+ * a typical usage.
+ *
  * @param img picture in which we are looking.
  * @param xmin pointer to an integer where the horizontal position
  *        of the lower left position of the grid will be written.
@@ -230,20 +252,20 @@ int gridLocate(Img * img,
                       img,
                       1,
                       50, /* length */
-                      0,  /* threshold */ 
+                      -10,  /* threshold */ 
                       1,1);
     
     
     if (gridDumpDebugInfo) {
-        imgWrite(layer1HO,"gridLayer1OutputVert.png");
-        imgWrite(layer1VO,"gridLayer1OutputHori.png");
+        imgWrite(layer1HO,"gridLayer1OutputHori.png");
+        imgWrite(layer1VO,"gridLayer1OutputVert.png");
     }
     Img *layer5HO,*layer5VO;
     layer5HO=layer1HO;
     layer5VO=layer1VO;
-    int sumMinVal=8*img->height*0;
-    int sumMaxVal=64*img->height;
-    Img * flattenedHori = newImgColor(layer5VO->width,1,0);
+    int sumMinVal=8*img->height;
+    int sumMaxVal=128*img->height;
+    Img * flattenedVert = newImgColor(layer5VO->width,1,0);
     for (int x=0;x<layer5VO->width;++x) {
         int s=0;
         for (int y=0;y<layer5VO->height;++y) {
@@ -252,18 +274,17 @@ int gridLocate(Img * img,
         if (s<sumMinVal) s=0;
         else if (s>sumMaxVal) s=255;
         else s=255*(s-sumMinVal)/(sumMaxVal-sumMinVal);
-        flattenedHori->data[x]=s;
+        flattenedVert->data[x]=s;
         printf("%d ",s);
     }
     
     if (gridDumpDebugInfo) {
-        imgWrite(flattenedHori,"flattenedHori.png");
-
+        imgWrite(flattenedVert,"gridLayer2OutputVert.png");
     }
     printf("\n");
     sumMinVal=8*img->width;
-    sumMaxVal=64*img->width;
-    Img * flattenedVert = newImgColor(layer5VO->height,1,0);
+    sumMaxVal=128*img->width;
+    Img * flattenedHori = newImgColor(layer5VO->height,1,0);
     for (int y=0;y<layer5HO->height;++y) {
         int s=0;
         for (int x=0;x<layer5HO->width;++x) {
@@ -272,12 +293,12 @@ int gridLocate(Img * img,
         if (s<sumMinVal) s=0;
         else if (s>sumMaxVal) s=255;
         else s=255*(s-sumMinVal)/(sumMaxVal-sumMinVal);
-        flattenedVert->data[y]=s;
+        flattenedHori->data[y]=s;
         printf("%d ",s);
     }
     
     if (gridDumpDebugInfo) {
-        imgWrite(flattenedVert,"flattenedVert.png");
+        imgWrite(flattenedHori,"gridLayer2OutputHori.png");
     }
     printf("\n");
 
@@ -287,16 +308,16 @@ int gridLocate(Img * img,
     int minLength = img->width;
     if (img->height<minLength) minLength=img->height;
     int endRange=minLength;
-    int startRange=endRange/2;
+    int startRange=4*endRange/5;
     int maxCorrelationVer=0;
-    gridIdentifyNPoints(10,flattenedVert,startRange, endRange,ymin,ymax,
+    gridIdentifyNPoints(10,flattenedVert,startRange, endRange,xmin,xmax,
                         &maxCorrelationVer);
 
     if (gridDumpDebugInfo) {
         HERE("+++++++++++++++");
     }
     int maxCorrelationHori=0;
-    gridIdentifyNPoints(10,flattenedHori,startRange, endRange,xmin,xmax,
+    gridIdentifyNPoints(10,flattenedHori,startRange, endRange,ymin,ymax,
                         &maxCorrelationHori);
     HERE("maxCorrelationHori");
     HERED(maxCorrelationHori);

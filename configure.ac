@@ -27,9 +27,6 @@ git log --pretty=format:'%h' -n 1
 AC_CONFIG_FILES([
 Makefile
 src/Makefile
-src/inverter/Makefile
-src/edge/Makefile
-src/digits/Makefile
 src/cnn/Makefile
 ])
 AC_OUTPUT
