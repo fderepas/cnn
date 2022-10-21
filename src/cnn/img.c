@@ -8,7 +8,7 @@
 #include "filter.h"
 
 /**
- * Data structure errors when manipulating jpeg.
+ * @brief Data structure errors when manipulating jpeg.
  */
 struct jpegerrmgr {
     /** "public" fields */
@@ -37,7 +37,9 @@ Img * newImgFromArray(int w, int h, unsigned char * buffer) {
 
 /**
  * @brief create an image of a given color
- * @param filename name of the file to read
+ * @param w width of the picture
+ * @param h height of the picture 
+ * @param c hey level to fill the picture with
  * @return a newly allocated image.
  */
 Img * newImgColor(int w, int h, unsigned char c) {
@@ -95,8 +97,9 @@ Img * newImgVerticalBarInRect(int sx, int sy, int w) {
     }
     return answer;
 }
+
 /**
- * @brief create a 3x3 image to perform edge detection.
+ * @brief create a 3x3 image to be put in a filter to perform edge detection.
  * @return a newly allocated image.
  */
 Img * newImg33edge() {
@@ -109,6 +112,19 @@ Img * newImg33edge() {
     };
     return newImgFromArray(3,3,a);
 }
+
+/**
+ * @brief perform an edge detection on an image.
+ * @param img image on which we should perform the edge detection
+ * @return the newly allocated image with edge detection
+ */
+Img * imgEdgeDetect(Img * img) {
+    Filter * f = newFilter(newImg33edge(),0);
+    Img * answer = imgConvolutionSameSizeDiff(img,f);
+    deleteFilter(f);
+    return answer;
+}
+
 
 /**
  * @brief create an image with a black cross
@@ -199,6 +215,32 @@ Img * newImg9By9Dots(int w) {
     }
     return answer;
 }
+
+Img * newImgCorner(int s,int w) {
+    Img * answer = newImgColor(s,s,0);
+    
+    for (int x=0;x<s/2-2*w;++x) {
+        for (int y=0;y<s/2-2*w;++y) {
+            answer->data[x+s*y]=128;
+        }
+    }
+    for (int x=s/2-w/2;x<s/2-w/2+w;++x) {
+        if (x>=0 && x<s) {
+            for (int y=0;y<s/2-w/2+w;++y) {
+                answer->data[x+s*y]=255;
+            }
+        }
+    }
+    for (int y=s/2-w/2;y<s/2-w/2+w;++y) {
+        if (y>=0 && y<s) {
+            for (int x=0;x<s/2-w/2+w;++x) {
+                answer->data[x+s*y]=255;
+            }
+        }
+    }
+    return answer;
+}
+
 
 /**
  * @brief Creates an image with equaly separated N black dots
@@ -780,9 +822,11 @@ Img* imgLuminosityScale(Img*in) {
     int botLum=0;
     while (botLum<topLum && lumCount[botLum]<threshold) ++botLum;
     //topLum=100;
-    for(int i = 0; i < in->height*in->width; i++) {
-        answer->data[i]=
-            INBYTE((in->data[i]-botLum)*255/(topLum-botLum));
+    if (topLum>botLum) {
+        for(int i = 0; i < in->height*in->width; i++) {
+            answer->data[i]=
+                INBYTE((in->data[i]-botLum)*255/(topLum-botLum));
+        }
     }
     return answer;
 }
@@ -1153,6 +1197,10 @@ void imgUsage(FILE*f,char*name) {
     fprintf(f,"        Generates a black cross on a white background. \n");
     fprintf(f,"        The cross size is n by n pixels in a w by w\n");
     fprintf(f,"        picture. The cross line is <t> pixels thick.\n");
+    fprintf(f,"    --corner <n> <w>:\n");
+    fprintf(f,"        Generates a corner on a n by n image. \n");
+    fprintf(f,"        Line width is w.\n");
+    fprintf(f,"    [-d|--downscale] <n> :\n");
     fprintf(f,"    [-f|--flatten] :\n");
     fprintf(f,"        Flattens the contrast.\n");
     fprintf(f,"    [-h|--help] :\n");
@@ -1165,7 +1213,7 @@ void imgUsage(FILE*f,char*name) {
     fprintf(f,"    [-p|--print] :\n");
     fprintf(f,"        Prints on stdout numerical value of current image.\n");
     fprintf(f,"    [-s|--scale] <n>:\n");
-    fprintf(f,"        Scales image by a factor n.\n");
+    fprintf(f,"        Scales up an image by a factor n.\n");
     fprintf(f,"    --square <n> <w> <t>:\n");
     fprintf(f,"        Generates a black square on a white background. \n");
     fprintf(f,"        The square size is n by n pixels in a w by w\n");
@@ -1178,6 +1226,9 @@ void imgUsage(FILE*f,char*name) {
     fprintf(f,"    [-v|--vertical] <s> <w>:\n");
     fprintf(f,"        Generates a black vertical bar of width <w>\n");
     fprintf(f,"        in a white square of size <s>.\n");
+    fprintf(f,"    --verticalBar <width> <height> <w>:\n");
+    fprintf(f,"        Generates a black vertical bar of width <w>\n");
+    fprintf(f,"        in a white rectable of size <width> by <height>.\n");
     fprintf(f,"    --version :\n");
     fprintf(f,"        Displays the current version of %s.\n",bname);
     fprintf(f,"    --1d-dots <n> <w>:\n");
@@ -1294,6 +1345,12 @@ int imgMain(int argc, char *argv[]) {
                 NOT_ENOUGH;
                 int w=atoi(argv[i]);
                 newImage=newImg9By9Dots(w);
+            } else if (strcmp(argv[i],"--downscale")==0 ||
+                       strcmp(argv[i],"-d")==0 ) {
+                ++i;
+                NOT_ENOUGH;
+                int s=atoi(argv[i]);
+                newImage=imgDownSampleAvg(currentImage,s,s);
             } else if (strcmp(argv[i],"--3x3-edge")==0) {
                 newImage=newImg33edge();
             } else if (strcmp(argv[i],"--1d-dots")==0) {
@@ -1313,6 +1370,25 @@ int imgMain(int argc, char *argv[]) {
                 NOT_ENOUGH;
                 int w=atoi(argv[i]);
                 newImage=newImgVerticalBar(s,w);
+            } else if (strcmp(argv[i],"--verticalBar")==0  ) {
+                ++i;
+                NOT_ENOUGH;
+                int width=atoi(argv[i]);
+                ++i;
+                NOT_ENOUGH;
+                int height=atoi(argv[i]);
+                ++i;
+                NOT_ENOUGH;
+                int tickness=atoi(argv[i]);
+                newImage=newImgVerticalBarInRect(width,height,tickness);
+            } else if (strcmp(argv[i],"--corner")==0 ) {
+                ++i;
+                NOT_ENOUGH;
+                int s=atoi(argv[i]);
+                ++i;
+                NOT_ENOUGH;
+                int w=atoi(argv[i]);
+                newImage=newImgCorner(s,w);
             } else if (strcmp(argv[i],"--scale")==0 ||
                 strcmp(argv[i],"-s")==0 ) {
                 ++i;
@@ -1364,3 +1440,12 @@ int imgMain(int argc, char *argv[]) {
     deleteImg(currentImage);
     return 0;
 }
+/*
+make && \
+./img --verticalBar 7 10 1 -i vert.png  && \
+./img  ../../dataset/sudoku_photo/hard3.png -i -l -d 8 --conv vert.png 90 -l out.png && open out.png
+
+./img --corner 5 1 blcorner.png
+./img  ../../dataset/sudoku_photo/hard3.png -i -l -d 8 --conv blcorner.png 90 -l out.png && open out.png
+
+ */

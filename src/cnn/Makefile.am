@@ -2,6 +2,7 @@ AM_LDFLAGS = -ljpeg -lm -lpng
 # use asan options :
 # -fsanitize=address  -fsanitize=undefined 
 AM_CFLAGS=-g -fsanitize=address  -fsanitize=undefined
+#AM_CFLAGS=-g -O2
 bin_PROGRAMS=cnn
 cnn_SOURCES=img.c imgfam.c digits.c grid.c util.c fontname.c cnn.c filter.c filterfam.c layer.c
 #layer3_SOURCES=layer3.c fontname.c

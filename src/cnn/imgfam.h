@@ -32,6 +32,7 @@ ImgFam * imgFamRead(char*);
 Img* imgFamScalar(ImgFam*,FilterFam*);
 void imgFamPrint(ImgFam*);
 ImgFam* imgFamLuminosityScale(ImgFam*in);
+Img* imgFamMaxAllFam(ImgFam*in);
 void deleteImgFam(ImgFam *);
 
 #endif

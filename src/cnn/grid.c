@@ -10,7 +10,7 @@
  * in the picture.
  * Is is acheived via 3 convolution filters. First one 
  * has two parts : 1 detects horizontal lines, the other vertical lines.
- * Second filters makes sur that the lines are long enough. Third filter
+ * Second filter makes sure that the lines are long enough. Third filter
  * checks the spacing of the 10 lines (horizontal and vertical) that
  * compose the grid.
  */
@@ -20,46 +20,56 @@
  */
 int gridDumpDebugInfo=1;
 
-
 /**
  * @brief Generates filters for the convolution layer to 
  *        detect Sudoku grids.
+ *  
+ * This function generates either vertical or horizontal filters
+ * which are rotate between -5 and +5 degrees.
  * @param i : if i==0 this is a vertical filter
  *            if i==1 this is an horizontal filter
  * @param l length of the bar
- * @param t thickness of the bar
+ * @param tmin minimum thickness of the bar
+ * @param tmax maximum thickness of the bar
  * @param p filter threshold percentage
- * @return the newly allocated filter
+ * @return the newly allocated filter 
  */
 FilterFam * gridGetLayerHoriVertFilters(int i,
                                         int l,
-                                        int t,
+                                        int tmin,
+                                        int tmax,
                                         int p)
 {
-    FilterFam * answer=newFilterFam(1);
-
-    Img * filter = newImgVerticalBarInRect(5*t,l,t);
-    Img * rotatedFilter = NULL;
-    if (i==0)
-        rotatedFilter=newImgCopy(filter);
-    else
-        rotatedFilter=imgRotate90(filter);
-    Filter * invertedFilter = newFilter(imgInvert(rotatedFilter),p);
-    if (gridDumpDebugInfo) {
-        HERE("layer2 on filter");
-        HERED((int)invertedFilter->weight);
-        HERE("_________");
-        HERED((int)invertedFilter->maxVal);
+    FilterFam * answer=newFilterFam(11);
+    int degreeMax=10;
+    for (int t=tmin;t<=tmax;++t) {
+        for (int degrees=-degreeMax;degrees<=degreeMax;++degrees) {
+            Img * filter = newImgVerticalBarInRect(7*t,l,t);
+            Img * rotatedFilter = NULL;
+            if (i==0)
+                rotatedFilter=newImgCopy(filter);
+            else
+                rotatedFilter=imgRotate90(filter);
+            Img * r = imgRotate(rotatedFilter,degrees);
+            Filter * invertedFilter = newFilter(imgInvert(r),p);
+            if (0 && gridDumpDebugInfo) {
+                HERE("layer2 on filter");
+                HERED((int)invertedFilter->weight);
+                HERE("_________");
+                HERED((int)invertedFilter->maxVal);
+            }
+            ///invertedFilter->maxVal/10;
+            deleteImg(filter);
+            deleteImg(rotatedFilter);
+            deleteImg(r);
+            if (gridDumpDebugInfo || l==10) {
+                char filterName[99];
+                snprintf(filterName,99,"%s/grid/grid_filter_%d_%d_%02d",CFG_DATAROOTDIR,i,l,degrees);
+                filterWrite(invertedFilter,filterName);
+            }
+            filterFamSetFilter(answer,degrees+degreeMax,invertedFilter);
+        }
     }
-    ///invertedFilter->maxVal/10;
-    deleteImg(filter);
-    deleteImg(rotatedFilter);
-    if (gridDumpDebugInfo) {
-        char filterName[99];
-        snprintf(filterName,99,"%s/grid/grid_filter_%d",CFG_DATAROOTDIR,i);
-        filterWrite(invertedFilter,filterName);
-    }
-    filterFamSetFilter(answer,0,invertedFilter);
     return answer;
 }
 
@@ -88,9 +98,9 @@ void gridVertHoriConvo(Img ** outputH,
                        int stride)
 {
     FilterFam * filtersVert=
-        gridGetLayerHoriVertFilters(0,length,width,threshold);
+        gridGetLayerHoriVertFilters(0,length,width,width+0,threshold);
     FilterFam * filtersHori=
-        gridGetLayerHoriVertFilters(1,length,width,threshold);
+        gridGetLayerHoriVertFilters(1,length,width,width+0,threshold);
     
     ImgFam * layerVertOutput =
         filterFamApplyConvolutionSameSizeDiff(filtersVert,inputV);
@@ -115,14 +125,16 @@ void gridVertHoriConvo(Img ** outputH,
     
     if (betterContrastHori2->count!=1 ||
         betterContrastVert2->count!=1) {
-        ERROR("Wrong size.","");
+        //ERROR("Wrong size.","");
     }
     // write address the filter to return to caller
-    *outputV=betterContrastVert2->imgs[0];
-    *outputH=betterContrastHori2->imgs[0];
+    //*outputV=betterContrastVert2->imgs[0];
+    //*outputH=betterContrastHori2->imgs[0];
+    *outputV=imgFamMaxAllFam(betterContrastVert2);
+    *outputH=imgFamMaxAllFam(betterContrastHori2);
     // pretend there is no filter in the filterFam
-    betterContrastHori2->count=0;
-    betterContrastVert2->count=0;
+    //betterContrastHori2->count=0;
+    //betterContrastVert2->count=0;
     // delete filterFam allocated data
     deleteImgFam(betterContrastHori2);
     deleteImgFam(betterContrastVert2);
@@ -212,6 +224,75 @@ int gridIdentifyNPoints(int N,
     *lowerBound=lowerBoundOffset[maxIdx];
     *upperBound=upperBoundOffset[maxIdx];
     return 0;
+}
+
+void gridShowAllLayer1Output(Img * img,char *prefix,char * suffix) {
+    // turn all debug info to false on n, rather
+    gridDumpDebugInfo=0;
+    for (int i=200; i>0; i=i-10) {
+        printf("generating grid layer 1 output for threshold %d.\n",i);
+        Img *layer1HO,*layer1VO;
+        gridVertHoriConvo(&layer1HO,&layer1VO,
+                          img,
+                          img,
+                          2,
+                          i, /* length */
+                          0,  /* threshold */ 
+                          1,1);
+        char s[99];
+        snprintf(s,99,"%sgridLayer1OutHori%03d%s",prefix,i,suffix);
+        imgWrite(layer1HO,s);
+        snprintf(s,99,"%sgridLayer1OutVert%03d%s",prefix,i,suffix);
+        imgWrite(layer1VO,s);
+
+        deleteImg(layer1HO);
+        deleteImg(layer1VO);
+    }
+}
+
+Img* gridPreprocessRawPicture(char * imgName, int * scaleFactor,int saveToDisk)
+{
+    Img * rawInputImage=newImgRead(imgName);
+    *scaleFactor=0;
+    while (rawInputImage->width>400 && rawInputImage->height>400) {
+        Img * i = imgDivideByTwo(rawInputImage);
+        deleteImg(rawInputImage);
+        rawInputImage=i;
+        (*scaleFactor)++;
+    }
+    HERE(":-(");
+    if (saveToDisk) {
+        HERE(":-)");
+        imgWrite(rawInputImage,
+                 "../../doc/explanation/generated/gridLayer0_0.png");
+    }
+    Img * goodContastImage=imgLuminosityScale(rawInputImage);
+    if (saveToDisk) {
+        imgWrite(goodContastImage,
+                 "../../doc/explanation/generated/gridLayer0_1.png");
+    }
+    Img * invertedImage = imgRotate(imgInvert(goodContastImage),-2);
+    if (saveToDisk) {
+        imgWrite(invertedImage,
+                 "../../doc/explanation/generated/gridLayer0_2.png");
+    }
+    /*
+    Img * edgeDetection = imgEdgeDetect(invertedImage);
+    if (saveToDisk) {
+        imgWrite(edgeDetection,
+                 "../../doc/explanation/generated/gridLayer0_3.png");
+    }
+    Img * answer = imgLuminosityScale(edgeDetection);
+    if (saveToDisk) {
+        imgWrite(answer,
+                 "../../doc/explanation/generated/gridLayer0_4.png");
+    }
+    */
+    deleteImg(goodContastImage);
+    //deleteImg(invertedImage);
+    //deleteImg(edgeDetection);
+    //return answer;
+    return invertedImage;
 }
 
 /**
@@ -340,10 +421,15 @@ int gridLocate(Img * img,
 void gridUsage(FILE*f,char*name) {
     char * bname=basename(name);
     fprintf(f,"%s usage:\n", bname);
-    fprintf(f,"    %s [options] <input-file> <output-file>\n", bname);
+    fprintf(f,"    %s <input-file> [options] \n", bname);
     fprintf(f,"Locates a sudoku grid in an image.:\n");
     fprintf(f,"\n");
     fprintf(f,"Where option is one of:\n");
+    fprintf(f,"    [-l|--layer] <n> :\n");
+    fprintf(f,"         Output layer <n> to the disk for different values\n");
+    fprintf(f,"         of fiters\n");
+    fprintf(f,"    [-g|--grid] :\n");
+    fprintf(f,"         Try to find a sudoku grid.\n");
     fprintf(f,"    [-h|--help] :\n");
     fprintf(f,"         Displays this help message and leaves.\n");
 }
@@ -355,6 +441,7 @@ void gridUsage(FILE*f,char*name) {
  * @param argv value of arguments on the command line.
  */
 int gridMain(int argc,char**argv) {
+    int showLevel1=0;
     for (int j=1;j<argc;++j) {
         if (strcmp(argv[j],"-h")==0 || strcmp(argv[j],"--help")==0) {
             gridUsage(stdout,argv[0]);
@@ -365,19 +452,61 @@ int gridMain(int argc,char**argv) {
         gridUsage(stderr,argv[0]);
         ERROR("At least 2 argumens expected, the picture to read, and where tp write the output","");
     }
+    
     /* read input image */
-    Img * currentImage=newImgRead(argv[1]);
-    int xmin,ymin,xmax,ymax;
-    // locate the grid
-    if (!gridLocate(currentImage,&xmin,&ymin,&xmax,&ymax)) {
-        HERE("Found sudoku grid :");
-        printf("%d %d %d %d\n",xmin,ymin,xmax,ymax);
-        // draw the grid found
-        imgDrawRect(currentImage,xmin,ymin,xmax,ymax);
-        // write the image
-        imgWrite(currentImage,argv[2]);
-    } else {
-        ERROR("Could not find a grid in picture: ",argv[1]);
+    int scaleFactor=0;
+    Img * currentImage = gridPreprocessRawPicture(argv[1],
+                                                  &scaleFactor,
+                                                  0);
+
+#define NOT_ENOUGH                                        \
+    if (i>=argc) {                                        \
+        gridUsage(stderr,argv[0]);                        \
+        ERROR("not enough arguments.","");                \
+    }
+    int i=2;
+    while (i<argc) {
+        if (strcmp("-g",argv[i])==0 ||
+            strcmp("--grid",argv[i])==0) {
+            int xmin,ymin,xmax,ymax;
+            // locate the grid
+            if (!gridLocate(currentImage,&xmin,&ymin,&xmax,&ymax)) {
+                HERE("Found sudoku grid :");
+                printf("%d %d %d %d\n",xmin,ymin,xmax,ymax);
+                // draw the grid found
+                imgDrawRect(currentImage,xmin,ymin,xmax,ymax);
+                // write the image
+                imgWrite(currentImage,argv[2]);
+            } else {
+                ERROR("Could not find a grid in picture: ",argv[1]);
+            }
+        } else if (strcmp("-l",argv[i])==0 ||
+                   strcmp("--layer",argv[i])==0) {
+            ++i;
+            NOT_ENOUGH;
+            int layernum = atoi(argv[i]);
+            switch (layernum) {
+            case 0:
+                {
+                    int scaleFactor=0;
+                    gridDumpDebugInfo=1;
+                    gridPreprocessRawPicture(argv[1],&scaleFactor,1);
+                }
+                break;
+            case 1:
+                gridShowAllLayer1Output(currentImage,
+                                        "../../doc/explanation/generated/",
+                                        basename(argv[1]));
+                break;
+            default :
+                ERROR("No such layer","");
+                
+            }
+        } else {
+            gridUsage(stderr,argv[0]);
+            ERROR("unknown option: ",argv[i]);
+        }
+        ++i;
     }
     return 0;
 }

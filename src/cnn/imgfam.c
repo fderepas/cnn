@@ -164,3 +164,31 @@ void imgFamPrint(ImgFam* ifa) {
     }
 }
 
+/**
+ * @brief create a new picture where each pixel is the maximum
+ *        value of all pixels in the familly.
+ *
+ * All images in the familly should have the same size.
+ * @param in the familly of pictures.
+ * @return the newly allocated picture.
+ */
+Img* imgFamMaxAllFam(ImgFam*in) {
+    int w=in->imgs[0]->width;
+    int h=in->imgs[0]->height;
+    for (int i=1;i<in->count;++i) {
+        if (w!=in->imgs[i]->width || h!=in->imgs[i]->height)
+            ERROR("images should have same size to call imgFamMaxAllFam","");
+    }
+    Img * answer = newImgColor(w,h,0);
+    for (int x=0;x<w;++x) {
+        for (int y=0;y<h;++y) {
+            int m = in->imgs[0]->data[x+w*y];
+            for (int i=1;i<in->count;++i) {
+                if (m<in->imgs[i]->data[x+w*y])
+                    m=in->imgs[i]->data[x+w*y];
+            }
+            answer->data[x+w*y]=m;
+        }
+    }
+    return answer;
+}
